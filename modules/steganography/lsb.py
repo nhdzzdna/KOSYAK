@@ -16,8 +16,8 @@ Kunci steganografi: purpose_key(DEK, "stego") atau PBKDF2-HMAC-SHA256
 gambar tanpa pesan ditolak oleh magic dan kunci yang salah ditolak oleh
 CRC32.
 
-Muatan teks dienkripsi dengan Super Encryption; muatan berkas selalu
-dienkripsi AES-256-GCM. Enkripsi teks aktif secara default.
+Muatan teks dienkripsi dengan Super Encryption. Enkripsi teks aktif
+secara default. Muatan berkas lama tidak lagi didukung untuk ekstraksi.
 
 Kapasitas = (lebar × tinggi × 3 − 112) / 8 byte.
 Dimensi gambar pembawa maksimum 4000 × 4000 piksel.
@@ -44,7 +44,6 @@ MAX_DIMENSION = 4000
 _BLOCK_BITS = 65536                           # 8 KiB posisi per blok acak
 _STEGO_PBKDF2_SALT = b"cryptix-stego-passphrase-v1"
 _SUPER_PREFIX = "CXSE2."
-_FILE_SEP = b"\x00"
 
 
 # ── Kunci dan urutan posisi ──────────────────────────────────────────────────
@@ -137,34 +136,6 @@ def _encrypt_text(message: str, master_key: bytes | None,
     else:
         token = super_encrypt(message, master_key=master_key)
     return token.encode("utf-8")
-
-
-def _encrypt_file(filename: str, data: bytes, key: bytes) -> bytes:
-    """AES-256-GCM untuk berkas; nama berkas ikut terenkripsi di depan isi."""
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-    nonce = os.urandom(12)
-    plaintext = filename.encode("utf-8") + _FILE_SEP + data
-    # AAD memakai bagian header sebelum CRC agar muatan terikat pada
-    # jenis dan panjangnya; CRC sendiri dihitung setelah enkripsi.
-    aad = MAGIC + bytes([VERSION, TYPE_FILE]) + len(plaintext).to_bytes(4, "big")
-    ciphertext = AESGCM(key).encrypt(nonce, plaintext, aad)
-    return nonce + ciphertext
-
-
-def _decrypt_file(key: bytes, payload: bytes) -> tuple[str, bytes]:
-    """Balikan AES-256-GCM; mengembalikan (nama berkas, isi)."""
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-    if len(payload) < 28:
-        raise ValueError("Muatan berkas terlalu pendek.")
-    nonce, ciphertext = payload[:12], payload[12:]
-    # AAD memakai panjang plaintext; panjang itu pasti len(ciphertext) − tag.
-    plaintext_len = len(ciphertext) - 16
-    aad = MAGIC + bytes([VERSION, TYPE_FILE]) + plaintext_len.to_bytes(4, "big")
-    plaintext = AESGCM(key).decrypt(nonce, ciphertext, aad)
-    name, _, data = plaintext.partition(_FILE_SEP)
-    if not name:
-        raise ValueError("Nama berkas tidak ditemukan.")
-    return name.decode("utf-8"), data
 
 
 # ── Menulis dan membaca bit ──────────────────────────────────────────────────
@@ -289,60 +260,7 @@ def embed_message(
     }
 
 
-def embed_file(
-    input_image_path: str,
-    file_path: str,
-    output_path: str,
-    master_key: bytes | None = None,
-    passphrase: str | None = None,
-    filename: str | None = None,
-) -> dict:
-    """
-    Sisipkan isi berkas ke gambar pembawa; muatan selalu AES-256-GCM.
 
-    Parameters
-    ----------
-    filename : str  Nama berkas asli yang ikut terenkripsi di dalam muatan;
-                    default nama file sumber di disk.
-
-    Returns
-    -------
-    dict {"success", "capacity", "used", "encrypted": True} atau {"error"}.
-    """
-    key = _stego_key(master_key, passphrase)
-    if key is None:
-        return {"success": False, "error": MSG.STEGO_KEY_REQUIRED}
-
-    prepared, capacity, error = _prepare_carrier(input_image_path)
-    if error:
-        return {"success": False, "error": error}
-    pixels, flat = prepared
-
-    try:
-        with open(file_path, "rb") as handle:
-            data = handle.read()
-    except OSError:
-        return {"success": False, "error": MSG.STEGO_NO_PAYLOAD_FILE}
-    if not data:
-        return {"success": False, "error": MSG.STEGO_NO_PAYLOAD_FILE}
-
-    payload = _encrypt_file(filename or os.path.basename(file_path), data, key)
-    if len(payload) > capacity:
-        return {
-            "success": False,
-            "error": MSG.STEGO_TOO_LARGE.format(
-                used=len(payload), capacity=capacity
-            ),
-        }
-
-    _embed_bits(flat, payload, TYPE_FILE, _seed(key))
-    _save_png(pixels, output_path)
-    return {
-        "success": True,
-        "capacity": capacity,
-        "used": len(payload),
-        "encrypted": True,
-    }
 
 
 # ── API publik: mengekstrak ──────────────────────────────────────────────────
@@ -380,35 +298,25 @@ def extract_payload(
     if not read["success"]:
         return read
 
-    if read["type"] == TYPE_TEXT:
-        raw = read["payload"]
-        try:
-            token = raw.decode("utf-8")
-        except UnicodeDecodeError:
-            return {"success": False, "error": MSG.STEGO_DECODE_FAILED}
-        if token.startswith(_SUPER_PREFIX):
-            from modules.cryptography.super_encryption import super_decrypt
-            try:
-                if passphrase is not None:
-                    text = super_decrypt(token, passphrase=passphrase)
-                else:
-                    text = super_decrypt(token, master_key=master_key)
-            except Exception:
-                return {"success": False, "error": MSG.STEGO_DECRYPT_FAILED}
-            return {"success": True, "type": "text", "text": text, "encrypted": True}
-        return {"success": True, "type": "text", "text": token, "encrypted": False}
+    if read["type"] == TYPE_FILE:
+        return {"success": False, "error": MSG.STEGO_FILE_PAYLOAD_UNSUPPORTED}
 
+    raw = read["payload"]
     try:
-        filename, data = _decrypt_file(key, read["payload"])
-    except Exception:
-        return {"success": False, "error": MSG.STEGO_DECRYPT_FAILED}
-    return {
-        "success": True,
-        "type": "file",
-        "filename": filename,
-        "data": data,
-        "encrypted": True,
-    }
+        token = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return {"success": False, "error": MSG.STEGO_DECODE_FAILED}
+    if token.startswith(_SUPER_PREFIX):
+        from modules.cryptography.super_encryption import super_decrypt
+        try:
+            if passphrase is not None:
+                text = super_decrypt(token, passphrase=passphrase)
+            else:
+                text = super_decrypt(token, master_key=master_key)
+        except Exception:
+            return {"success": False, "error": MSG.STEGO_DECRYPT_FAILED}
+        return {"success": True, "type": "text", "text": text, "encrypted": True}
+    return {"success": True, "type": "text", "text": token, "encrypted": False}
 
 
 def extract_message(
@@ -426,33 +334,5 @@ def extract_message(
     result = extract_payload(stego_image_path, master_key, passphrase)
     if not result["success"]:
         return result
-    if result["type"] != "text":
-        return {"success": False, "error": MSG.STEGO_NOT_TEXT}
     return {"success": True, "message": result["text"],
-            "encrypted": result["encrypted"]}
-
-
-def extract_file(
-    stego_image_path: str,
-    output_path: str,
-    master_key: bytes | None = None,
-    passphrase: str | None = None,
-) -> dict:
-    """
-    Ekstrak muatan berkas ke *output_path* (hanya untuk pengujian lokal;
-    rute web menyajikan berkas langsung dari memori tanpa menulis plaintext).
-
-    Returns
-    -------
-    dict {"success", "filename", "path"} atau {"success": False, "error"}.
-    """
-    result = extract_payload(stego_image_path, master_key, passphrase)
-    if not result["success"]:
-        return result
-    if result["type"] != "file":
-        return {"success": False, "error": MSG.STEGO_NOT_FILE}
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    with open(output_path, "wb") as handle:
-        handle.write(result["data"])
-    return {"success": True, "filename": result["filename"],
-            "path": output_path, "size": len(result["data"])}
+            "encrypted": result.get("encrypted", False)}

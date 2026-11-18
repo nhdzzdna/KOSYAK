@@ -5,8 +5,6 @@ Steganography: menyisipkan dan mengekstrak muatan LSB pada PNG.
 """
 
 import hashlib
-import io
-import mimetypes
 import os
 import uuid
 
@@ -22,7 +20,7 @@ from modules.authentication.reauth import require_grant
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.steganography.lsb import (
-    embed_file, embed_message, extract_payload, image_capacity,
+    embed_message, extract_payload, image_capacity,
 )
 from modules.cryptography import session_keys
 from modules.cryptography.key_management import purpose_key
@@ -122,9 +120,7 @@ def capacity():
 @login_required
 def embed():
     carrier = request.files.get("carrier_image")
-    payload_type = request.form.get("payload_type", "text")
     message = request.form.get("message", "").strip()
-    payload_file = request.files.get("payload_file")
     # Enkripsi aktif secara default; kotak centang dikirim value "0" bila
     # dicabut pengguna.
     use_enc = request.form.get("use_encryption", "1") == "1"
@@ -142,10 +138,7 @@ def embed():
     if not carrier or not carrier.filename:
         flash(MSG.STEGO_NO_CARRIER, "warning")
         return redirect(url_for("stego.index"))
-    if payload_type == "file" and (not payload_file or not payload_file.filename):
-        flash(MSG.STEGO_NO_PAYLOAD_FILE, "warning")
-        return redirect(url_for("stego.index"))
-    if payload_type == "text" and not message:
+    if not message:
         flash(MSG.STEGO_EMPTY_MESSAGE, "warning")
         return redirect(url_for("stego.index"))
 
@@ -165,32 +158,16 @@ def embed():
 
     mk = _dek()
     stego_master = mk if key_mode == "account" else None
-    tmp_payload = None
     try:
-        if payload_type == "file":
-            payload_name = secure_filename(payload_file.filename)
-            tmp_payload = os.path.join(
-                config.TEMPORARY_FILES_DIR, f"stego_pl_{uuid.uuid4().hex}"
-            )
-            payload_file.save(tmp_payload)
-            result = embed_file(
-                tmp_in, tmp_payload, out_path,
-                master_key=stego_master, passphrase=passphrase,
-                filename=payload_name,
-            )
-            has_encryption = 1
-        else:
-            result = embed_message(
-                tmp_in, message, out_path,
-                master_key=stego_master, passphrase=passphrase,
-                encrypt=use_enc,
-            )
-            has_encryption = int(use_enc)
+        result = embed_message(
+            tmp_in, message, out_path,
+            master_key=stego_master, passphrase=passphrase,
+            encrypt=use_enc,
+        )
+        has_encryption = int(use_enc)
     finally:
         if os.path.exists(tmp_in):
             os.remove(tmp_in)
-        if tmp_payload and os.path.exists(tmp_payload):
-            os.remove(tmp_payload)
 
     if not result["success"]:
         flash(MSG.STEGO_EMBED_FAILED.format(error=result.get('error')), "danger")
@@ -223,33 +200,18 @@ def _hasil_ekstraksi(result: dict):
     Sajikan hasil ekstrak.
 
     Teks dikirim sebagai JSON agar ditampilkan di dalam halaman, bukan flash.
-    Berkas disajikan langsung dari memori sehingga plaintext tidak ditulis ke
-    disk.
     """
-    if not result["success"]:
+    if not result.get("success"):
         pesan = result.get("error") or MSG.STEGO_DECRYPT_FAILED
         return jsonify({
             "success": False,
             "error": pesan,
             "message": MSG.STEGO_EXTRACT_FAILED.format(error=pesan),
         }), 400
-    if result["type"] == "file":
-        mime = (
-            mimetypes.guess_type(result["filename"])[0]
-            or "application/octet-stream"
-        )
-        response = send_file(
-            io.BytesIO(result["data"]),
-            download_name=result["filename"],
-            as_attachment=True,
-            mimetype=mime,
-        )
-        response.headers["X-Cryptix-Extract"] = "file"
-        return response
     response = jsonify({
         "success": True,
         "type": "text",
-        "text": result["text"],
+        "text": result.get("text", ""),
         "encrypted": bool(result.get("encrypted", False)),
         "message": MSG.STEGO_EXTRACT_TEXT_SUCCESS,
     })

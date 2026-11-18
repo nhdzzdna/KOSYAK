@@ -19,8 +19,8 @@ Aplikasi ini dirancang dengan model keamanan berlapis: autentikasi multi-faktor 
    - Dilengkapi *super encryption* bertahap dan kompresi zlib opsional untuk efisiensi penyimpanan.
 
 3. **Steganografi Citra (LSB)**
-   - Penyembunyian pesan dan berkas rahasia di dalam saluran piksel citra pembawa (*carrier image*) menggunakan metode *Least Significant Bit* (LSB).
-   - Dilengkapi proteksi kata sandi dan verifikasi integritas pesan ekstraksi.
+   - Penyembunyian pesan teks rahasia di dalam saluran piksel citra pembawa (*carrier image*) menggunakan metode *Least Significant Bit* (LSB).
+   - Dilengkapi proteksi kata sandi/kunci akun dan verifikasi integritas pesan ekstraksi.
 
 4. **Buku Besar Audit Rantai Blok (Hash Chain)**
    - Setiap mutasi data penting (unggah, unduh, hapus, pemindahan ke Sampah, modifikasi) dicatat dalam blok audit lokal yang saling mengikat menggunakan hash kriptografis SHA-256.

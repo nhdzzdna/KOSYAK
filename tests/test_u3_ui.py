@@ -291,12 +291,13 @@ class TestSteganography:
         body = _halaman(client, "/steganography")
         assert 'id="sg-sisip-title"' in body
         assert 'id="sg-ekstrak-title"' in body
-        assert body.count("data-kx-dropzone") == 3
+        assert body.count("data-kx-dropzone") == 2
 
-        # Segmented jenis muatan dan pilihan kunci.
-        assert 'data-sg-jenis="text"' in body
-        assert 'data-sg-jenis="file"' in body
-        assert 'name="payload_type" id="sg-jenis" value="text"' in body
+        # Pesan teks selalu tampil dan wajib diisi.
+        assert re.search(r'<textarea[^>]*name="message"[^>]*id="sg-pesan"[^>]*required', body)
+        assert 'id="sg-teks-field"' in body
+
+        # Pilihan kunci muatan tetap ada.
         assert 'data-sg-kunci="account"' in body
         assert 'data-sg-kunci="passphrase"' in body
         assert 'name="key_mode" id="sg-kunci-mode" value="account"' in body
@@ -320,6 +321,7 @@ class TestSteganography:
         assert 'data-reauth="stego.extract"' in body
         assert 'id="stego-result"' in body
         assert "Belum ada hasil ekstraksi" in body
+        assert "hasil teks tampil di sini" in body
 
         # Tabel tersimpan kosong dengan tombol aksi.
         assert "Belum ada stego image tersimpan" in body
@@ -342,7 +344,6 @@ class TestSteganography:
         resp = client.post("/steganography/embed", data={
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
-            "payload_type": "text",
             "message": "rahasia u3",
             "key_mode": "account",
             "use_encryption": "1",
@@ -373,6 +374,14 @@ class TestSteganography:
         assert 'id="sg-modal-passphrase"' in body
         assert "data-sg-tutup-modal" in body
 
+    def test_halaman_tanpa_payload_berkas(self, client):
+        body = _halaman(client, "/steganography")
+        assert "payload_file" not in body
+        assert "data-sg-jenis" not in body
+        assert "sg-berkas" not in body
+        assert "payload_type" not in body
+        assert "data-msg-file-downloaded" not in body
+
     def test_embed_tanpa_kolom_use_encryption_tetap_enkripsi(self, client):
         """Tanpa JS, hidden default "1" menjaga muatan tetap terenkripsi."""
         token = _csrf(client, "/steganography")
@@ -395,7 +404,6 @@ class TestSteganography:
         resp = client.post("/steganography/embed", data={
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
-            "payload_type": "text",
             "message": "pesan",
             "key_mode": "passphrase",
             "passphrase": "",
@@ -403,3 +411,17 @@ class TestSteganography:
         body = resp.get_data(as_text=True)
         assert resp.status_code == 200
         assert MSG.STEGO_PASSPHRASE_REQUIRED in body
+
+    def test_embed_payload_type_file_tidak_menyisipkan_berkas(self, client):
+        token = _csrf(client, "/steganography")
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
+            "payload_type": "file",
+        }, content_type="multipart/form-data", follow_redirects=True)
+        body = resp.get_data(as_text=True)
+        assert resp.status_code == 200
+        assert MSG.STEGO_EMPTY_MESSAGE in body
+        with get_db() as db:
+            jumlah = db.execute("SELECT COUNT(*) AS c FROM stego_images").fetchone()["c"]
+        assert jumlah == 0

@@ -6,47 +6,12 @@
 }
 
 .authx-shell {
-  display: grid;
-  grid-template-columns: minmax(320px, 44%) 1fr;
   min-height: 100vh;
 }
 
-/* ── Panel merek ────────────────────────────────────────────────────────── */
-.authx-brand {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-right: 1px solid var(--kx-border);
-  background: var(--kx-surface);
-}
-
-.authx-brand-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(45, 212, 191, .07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(45, 212, 191, .07) 1px, transparent 1px);
-  background-size: 88px 88px;
-  mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
-  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
-}
-
-.authx-brand-grid::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 44px 44px, rgba(45, 212, 191, .22) 2px, transparent 2.5px),
-    radial-gradient(circle at 44px 56px, rgba(45, 212, 191, .12) 1.5px, transparent 2px);
-  background-size: 88px 88px;
-}
-
-.authx-brand-inner {
-  position: relative;
-  z-index: 1;
-  padding: var(--kx-space-5);
+/* ── Panel merek (kepala formulir) ──────────────────────────────────────── */
+.authx-brand-head {
+  margin-bottom: var(--kx-space-4);
 }
 
 .authx-logo {
@@ -79,9 +44,12 @@
 /* ── Panel formulir ─────────────────────────────────────────────────────── */
 .authx-main {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 100vh;
   padding: var(--kx-space-5) var(--kx-space-3);
+  box-sizing: border-box;
 }
 
 .authx-card {
@@ -303,14 +271,7 @@
 
 /* ── Responsif ──────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .authx-shell { grid-template-columns: 1fr; }
-  .authx-brand {
-    min-height: 132px;
-    border-right: 0;
-    border-bottom: 1px solid var(--kx-border);
-  }
-  .authx-brand-inner { padding: var(--kx-space-4); }
-  .authx-main { align-items: flex-start; padding-top: var(--kx-space-4); }
+  .authx-main { padding-top: var(--kx-space-4); }
 }
 
 @media (max-width: 560px) {

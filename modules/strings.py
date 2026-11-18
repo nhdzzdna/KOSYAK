@@ -193,16 +193,13 @@ class MSG:
     STEGO_NO_MESSAGE         = "Tidak ditemukan pesan yang valid; gambar bukan gambar stego."
     STEGO_DECODE_FAILED      = "Muatan hasil ekstraksi tidak dapat dibaca sebagai teks UTF-8."
     STEGO_DECRYPT_FAILED     = "Dekripsi pesan gagal; kunci mungkin salah."
-    STEGO_NO_PAYLOAD_FILE     = "Silakan pilih berkas yang akan disisipkan."
     STEGO_KEY_REQUIRED       = "Kunci steganografi wajib disediakan untuk menyisipkan atau mengekstrak muatan."
     STEGO_IMAGE_TOO_LARGE    = "Dimensi gambar pembawa melebihi batas {max}x{max} piksel."
     STEGO_TOO_LARGE          = "Muatan terlalu besar: {used} byte melebihi kapasitas {capacity} byte."
     STEGO_TAMPERED           = "Muatan tidak cocok: kunci salah atau isi gambar telah berubah."
     STEGO_VERSION_UNSUPPORTED = "Versi muatan steganografi tidak didukung."
-    STEGO_NOT_TEXT           = "Muatan dalam gambar berupa berkas, bukan teks."
-    STEGO_NOT_FILE           = "Muatan dalam gambar berupa teks, bukan berkas."
+    STEGO_FILE_PAYLOAD_UNSUPPORTED = "Gambar ini memuat muatan berkas, yang tidak lagi didukung."
     STEGO_PNG_WARNING        = "Gambar hasil disimpan sebagai PNG; menyimpan ulang sebagai JPEG akan merusak muatan."
-    STEGO_FILE_EXTRACTED     = "Berkas berhasil diekstrak dari gambar."
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
@@ -302,7 +299,6 @@ class MSG:
     MEDIA_RANGE_INVALID      = "Rentang byte tidak valid."
     STEGO_PASSPHRASE_REQUIRED = "Kunci rahasia wajib diisi bila dipilih sebagai kunci muatan."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
-    STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
     # ── U3: antarmuka Steganography ─────────────────────────────────────
     STEGO_ACCOUNT_KEY_NOTE   = "Memakai kunci akun Anda."
     STEGO_KEY_NOT_STORED     = "Kunci rahasia tidak disimpan di sesi, cookie, atau log."
@@ -313,7 +309,6 @@ class MSG:
     STEGO_CAPACITY_ERROR     = "Kapasitas gambar tidak dapat dibaca."
     STEGO_EXTRACT_PROCESSING = "Memproses ekstraksi…"
     STEGO_EXTRACT_FAILED_JS  = "Ekstraksi gagal."
-    STEGO_FILE_DOWNLOADED    = "Berkas berhasil diekstrak: {nama}."
     STEGO_TEXT_RESULT_TITLE  = "Pesan hasil ekstraksi"
     STEGO_DELETE_TITLE       = "Hapus gambar stego?"
     STEGO_DELETE_MESSAGE     = "Gambar stego {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."

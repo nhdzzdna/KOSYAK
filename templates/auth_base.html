@@ -15,17 +15,14 @@
 <body class="authx-page">
 {% from "_ikon.html" import ikon %}
   <div class="authx-shell">
-    <aside class="authx-brand" aria-label="{{ MSG.AUTH_BRAND_NAME }}">
-      <span class="authx-brand-grid" aria-hidden="true"></span>
-      <div class="authx-brand-inner">
+    <main class="authx-main">
+      <div class="authx-brand-head">
         <div class="authx-logo">
           <span class="authx-logo-icon" aria-hidden="true">{{ ikon('lock', 22) }}</span>
           <span class="authx-brand-name">{{ MSG.AUTH_BRAND_NAME }}</span>
         </div>
       </div>
-    </aside>
 
-    <main class="authx-main">
       <div class="authx-card" {% block card_class %}{% endblock %}>
         <div class="authx-card-head">
           <h1 class="authx-title">{% block auth_title %}{% endblock %}</h1>

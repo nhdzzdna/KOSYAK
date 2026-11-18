@@ -26,13 +26,9 @@
   var kotakKapasitas = document.getElementById('sg-kapasitas');
   var inputPembawa = document.getElementById('sg-pembawa');
   var inputPesan = document.getElementById('sg-pesan');
-  var inputBerkas = document.getElementById('sg-berkas');
   var checkboxEnkripsi = document.getElementById('sg-enkripsi');
   var inputUseEnc = document.getElementById('sg-use-enc');
-  var inputJenis = document.getElementById('sg-jenis');
   var inputKunciMode = document.getElementById('sg-kunci-mode');
-  var fieldTeks = document.getElementById('sg-teks-field');
-  var fieldBerkas = document.getElementById('sg-berkas-field');
   var infoKunciAkun = document.getElementById('sg-kunci-akun-info');
   var fieldKunciRahasia = document.getElementById('sg-kunci-rahasia-field');
   var inputPassphraseSisip = document.getElementById('sg-passphrase');
@@ -78,37 +74,6 @@
     var meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.getAttribute('content') : '';
   }
-
-  // ── Segmented jenis muatan ───────────────────────────────────────────
-  function jenisBerkas() {
-    return inputJenis && inputJenis.value === 'file';
-  }
-
-  function aturJenisMuatan() {
-    var berkas = jenisBerkas();
-    if (fieldTeks) {
-      fieldTeks.hidden = berkas;
-    }
-    if (fieldBerkas) {
-      fieldBerkas.hidden = !berkas;
-    }
-    perbaruiKapasitas();
-  }
-
-  document.querySelectorAll('[data-sg-jenis]').forEach(function (tombol) {
-    tombol.addEventListener('click', function () {
-      var nilai = tombol.getAttribute('data-sg-jenis');
-      if (inputJenis) {
-        inputJenis.value = nilai;
-      }
-      document.querySelectorAll('[data-sg-jenis]').forEach(function (el) {
-        var aktif = el === tombol;
-        el.classList.toggle('is-active', aktif);
-        el.setAttribute('aria-pressed', aktif ? 'true' : 'false');
-      });
-      aturJenisMuatan();
-    });
-  });
 
   // ── Segmented kunci muatan ──────────────────────────────────────────
   function aturKunci() {
@@ -157,10 +122,6 @@
   // ── Kapasitas ───────────────────────────────────────────────────────
   function perkiraanByte() {
     var overhead = checkboxEnkripsi && checkboxEnkripsi.checked ? 192 : 0;
-    if (jenisBerkas()) {
-      var berkas = inputBerkas && inputBerkas.files ? inputBerkas.files[0] : null;
-      return berkas ? berkas.size + berkas.name.length + 64 + overhead : 0;
-    }
     var teks = inputPesan ? inputPesan.value : '';
     return new TextEncoder().encode(teks).length + overhead;
   }
@@ -202,9 +163,6 @@
 
   if (inputPesan) {
     inputPesan.addEventListener('input', perbaruiKapasitas);
-  }
-  if (inputBerkas) {
-    inputBerkas.addEventListener('change', perbaruiKapasitas);
   }
 
   function perbaruiPratinjau() {
@@ -387,35 +345,6 @@
     kotakHasil.appendChild(bungkus);
   }
 
-  function namaBerkasDari(header) {
-    if (!header) {
-      return null;
-    }
-    var cocok = /filename\*?=(?:UTF-8''|\x22)?([^\x22;]+)/i.exec(header);
-    if (!cocok) {
-      return null;
-    }
-    var nama = cocok[1].replace(/^\x22|\x22$/g, '');
-    try {
-      return decodeURIComponent(nama);
-    } catch (err) {
-      return nama;
-    }
-  }
-
-  function unduhBlob(blob, nama) {
-    var url = URL.createObjectURL(blob);
-    var tautan = document.createElement('a');
-    tautan.href = url;
-    tautan.download = nama || 'berkas-hasil';
-    document.body.appendChild(tautan);
-    tautan.click();
-    document.body.removeChild(tautan);
-    window.setTimeout(function () {
-      URL.revokeObjectURL(url);
-    }, 1000);
-  }
-
   // ── Pengiriman ekstraksi ────────────────────────────────────────────
   function kirimEkstraksi(url, data, token, dariModal) {
     tampilkanMemuat();
@@ -438,39 +367,23 @@
             return { ok: resp.ok, json: muatan };
           });
         }
-        if (!resp.ok) {
-          throw new Error(pesan('extract-failed'));
-        }
-        return resp.blob().then(function (blob) {
-          return {
-            ok: true,
-            blob: blob,
-            nama: namaBerkasDari(resp.headers.get('Content-Disposition')) ||
-              'berkas-hasil'
-          };
-        });
+        return { ok: false, json: null };
       })
       .then(function (hasil) {
         if (dariModal) {
           tutupModalEkstrak();
         }
-        if (!hasil.ok || (hasil.json && hasil.json.success === false)) {
+        if (!hasil.ok || !hasil.json || hasil.json.success === false) {
           var galat = hasil.json && hasil.json.error
             ? hasil.json.error : pesan('extract-failed');
           kotakInfo('kx-sg-infobox-danger', galat);
           return;
         }
-        if (hasil.json) {
-          if (hasil.json.type === 'text') {
-            hasilTeks(hasil.json.text);
-          } else {
-            kotakInfo('kx-infobox', hasil.json.message || pesan('file-downloaded'));
-          }
-          return;
+        if (hasil.json.type === 'text') {
+          hasilTeks(hasil.json.text);
+        } else {
+          kotakInfo('kx-sg-infobox-danger', pesan('extract-failed'));
         }
-        unduhBlob(hasil.blob, hasil.nama);
-        kotakInfo('kx-infobox', pesan('file-downloaded', { nama: hasil.nama }));
-        toast(pesan('file-downloaded', { nama: hasil.nama }), 'success');
       })
       .catch(function () {
         if (dariModal) {
@@ -663,7 +576,6 @@
   }, true);
 
   // ── Keadaan awal ─────────────────────────────────────────────────────
-  aturJenisMuatan();
   aturKunci();
   sinkronEnkripsi();
 })();

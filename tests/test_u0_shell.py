@@ -125,3 +125,12 @@ def test_base_html_memuat_base_css(client):
     pos_comp = html.find("css/components.css")
     assert pos_tokens < pos_base < pos_comp, "base.css harus dimuat setelah tokens.css dan sebelum components.css"
 
+
+def test_auth_pages_brand_head_tanpa_aside(app):
+    c = app.test_client()
+    for path in ("/login", "/register"):
+        html = c.get(path).get_data(as_text=True)
+        assert '<aside class="authx-brand"' not in html
+        assert "authx-brand-head" in html
+        assert "KOSYAK" in html
+

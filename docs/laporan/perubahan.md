@@ -82,3 +82,20 @@ Dokumen ini merangkum seluruh perubahan arsitektur, keamanan, backend, dan perom
   - Nama berkas unduhan kunci darurat pemulihan tetap dipertahankan sebagai `cryptix-kunci-pemulihan.txt`. Hal ini sengaja dipertahankan agar kompatibel dengan sistem lama dan tidak merusak skrip atau kebiasaan operasional pengguna.
   - Nama basis data internal (`cryptix.db`) dan token rahasia (`.cryptix_token`) dipertahankan secara utuh.
 
+---
+
+## 7. Revisi Antarmuka Autentikasi & Penyederhanaan Steganografi (19 November 2026)
+*Branch kerja: `revisi-auth-stego` (belum di-commit).*
+
+- **Halaman login/register (dan halaman auth lain)**:
+  - **Apa**: tata letak dua kolom dengan panel merek `<aside class="authx-brand">` di sisi kiri dihapus. Logo dan nama KOSYAK dipindahkan ke atas kartu formulir sebagai kepala terpusat (`.authx-brand-head`) dalam satu kolom.
+  - **Alasan**: panel merek memakan sekitar 44% lebar layar sehingga area formulir sempit dan ruang terbuang; satu kolom memberi ruang formulir yang lebih lega dan tetap rapi di desktop maupun layar kecil.
+  - **Cakupan**: `templates/auth_base.html`, `static/css/halaman/auth.css`. Seluruh halaman yang mewarisi `auth_base.html` (login, register, pemulihan akun, kunci pemulihan, penyiapan, dan halaman galat) ikut menyesuaikan tanpa mengubah isi formulir, id/name input, maupun skrip.
+
+- **Steganografi: muatan teks saja**:
+  - **Apa**: opsi penyisipan muatan "Berkas" dihapus (tab jenis muatan, dropzone berkas muatan, dan `payload_type=file`). Fitur sisipkan kini hanya menerima pesan teks; antarmuka, skrip, rute, dan modul LSB disesuaikan. Ekstraksi gambar stego lama yang memuat berkas tidak lagi mendekripsi muatan, melainkan mengembalikan pesan galat yang rapi bahwa muatan berkas tidak lagi didukung (tanpa crash).
+  - **Alasan**: materi dan penggunaan yang dipelajari hanya penyisipan pesan teks, sehingga dukungan muatan berkas tidak diperlukan.
+  - **Tidak berubah**: ekstraksi teks, kunci akun/kunci rahasia, enkripsi muatan, perhitungan kapasitas, daftar/unduh/hapus stego tersimpan, pencatatan blockchain `STEGO_EMBED`, dan format header `CRXS`.
+  - **Cakupan**: `templates/steganography.html`, `static/js/steganography.js`, `routes/stego_routes.py`, `modules/steganography/lsb.py`, `modules/strings.py`, `static/css/halaman/steganography.css`, `README.md`, serta pembaruan/penambahan pengujian terkait.
+  - **Catatan dokumen historis**: `docs/progress/U3.md` dan `docs/desain/spesifikasi-ui.txt` masih mendeskripsikan tab Teks/Berkas dan/atau panel merek login lama; dokumen historis tersebut tidak diubah dan direvisi oleh entri ini.
+

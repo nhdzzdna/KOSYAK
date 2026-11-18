@@ -14,7 +14,6 @@
      data-msg-capacity-error="{{ MSG.STEGO_CAPACITY_ERROR }}"
      data-msg-processing="{{ MSG.STEGO_EXTRACT_PROCESSING }}"
      data-msg-extract-failed="{{ MSG.STEGO_EXTRACT_FAILED_JS }}"
-     data-msg-file-downloaded="{{ MSG.STEGO_FILE_DOWNLOADED }}"
      data-msg-text-title="{{ MSG.STEGO_TEXT_RESULT_TITLE }}"
      data-msg-delete-title="{{ MSG.STEGO_DELETE_TITLE }}"
      data-msg-delete-message="{{ MSG.STEGO_DELETE_MESSAGE }}">
@@ -49,29 +48,10 @@
             <img id="sg-pratinjau-img" alt="Pratinjau gambar pembawa" />
           </figure>
 
-          <div class="kx-field">
-            <span class="kx-label" id="sg-jenis-label">Jenis muatan</span>
-            <div class="kx-tabs" role="group" aria-labelledby="sg-jenis-label">
-              <button type="button" class="kx-tab is-active" data-sg-jenis="text" aria-pressed="true">Teks</button>
-              <button type="button" class="kx-tab" data-sg-jenis="file" aria-pressed="false">Berkas</button>
-            </div>
-            <input type="hidden" name="payload_type" id="sg-jenis" value="text" />
-          </div>
-
           <div class="kx-field" id="sg-teks-field">
             <label class="kx-label" for="sg-pesan">Pesan</label>
             <textarea class="kx-textarea kx-sg-pesan" name="message" id="sg-pesan" rows="4"
-                      placeholder="Tulis pesan yang akan disembunyikan…"></textarea>
-          </div>
-
-          <div class="kx-field" id="sg-berkas-field" hidden>
-            <span class="kx-label" id="sg-berkas-label">Berkas muatan</span>
-            <div class="kx-dropzone kx-sg-dropzone" data-kx-dropzone role="button" tabindex="0"
-                 aria-labelledby="sg-berkas-label">
-              <input type="file" name="payload_file" id="sg-berkas" />
-              <span class="kx-sg-dropzone-ikon" aria-hidden="true">{{ ikon('file', 26) }}</span>
-              <span class="kx-dropzone-title">Letakkan berkas atau klik untuk memilih</span>
-            </div>
+                      placeholder="Tulis pesan yang akan disembunyikan…" required></textarea>
           </div>
 
           <div class="kx-field">
@@ -159,7 +139,7 @@
           <div class="kx-empty kx-sg-hasil-kosong" id="sg-hasil-kosong">
             <span aria-hidden="true">{{ ikon('search', 30) }}</span>
             <p class="kx-empty-title">Belum ada hasil ekstraksi</p>
-            <p>Pilih gambar stego lalu jalankan Ekstrak; hasil teks atau berkas tampil di sini.</p>
+            <p>Pilih gambar stego lalu jalankan Ekstrak; hasil teks tampil di sini.</p>
           </div>
         </div>
 

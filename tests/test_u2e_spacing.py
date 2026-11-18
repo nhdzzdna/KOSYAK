@@ -63,7 +63,6 @@ def test_security_center_responsif_memakai_selektor_markup():
 
 def test_keadaan_awal_tersembunyi():
     stego = _baca(AKAR / "templates" / "steganography.html")
-    assert re.search(r'id="sg-berkas-field"[^>]*\bhidden\b', stego)
     assert re.search(r'id="sg-kunci-rahasia-field"[^>]*\bhidden\b', stego)
 
     settings = _baca(AKAR / "templates" / "settings.html")
