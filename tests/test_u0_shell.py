@@ -132,5 +132,6 @@ def test_auth_pages_brand_head_tanpa_aside(app):
         html = c.get(path).get_data(as_text=True)
         assert '<aside class="authx-brand"' not in html
         assert "authx-brand-head" in html
+        assert "authx-bg-grid" in html
         assert "KOSYAK" in html
 
