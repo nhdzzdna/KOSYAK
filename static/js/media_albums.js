@@ -6,6 +6,7 @@
  * - Pemilihan banyak berkas dan sinkronisasi dengan KX.aksiMengambang
  * - Pencarian media lokal di sisi klien
  * - Aksi menu titik tiga (â‹¯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah via KX.konfirmasiHapus)
+ * - Aksi menu titik tiga (⋯): Unduh, Pindahkan (bila ada), Hapus (ke Sampah via KX.konfirmasiHapus)
  * - Integrasi pengunci item generik item_lock.js (scope item.view)
  */
 (function () {
@@ -497,7 +498,6 @@
       window.KX.modal.tutup(penampil);
     } else {
       penampil.classList.remove('is-open');
-      penampil.style.display = 'none';
       penampil.setAttribute('aria-hidden', 'true');
     }
     if (panggung) {
@@ -548,7 +548,6 @@
       window.KX.modal.buka(penampil);
     } else {
       penampil.classList.add('is-open');
-      penampil.style.display = 'flex';
       penampil.setAttribute('aria-hidden', 'false');
     }
   }
