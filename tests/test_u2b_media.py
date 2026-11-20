@@ -92,7 +92,7 @@ def _unggah_media_db(nama: str, state: str = "normal", locked_album: bool = Fals
             (1, name_token, stored, "image", len(raw), enc_res["sha256_plaintext"], enc_res["sha256_ciphertext"]),
         )
         fid = cur.lastrowid
-        if state == "locked" or locked_album or album:
+        if locked_album or album:
             nama_album = "Album Dokumentasi" if album else "Album Liburan"
             col_name_enc = encrypt_field(nama_album, db_key, field_aad(1, "collections", "name_enc"))
             cur_col = db.execute(
@@ -104,6 +104,8 @@ def _unggah_media_db(nama: str, state: str = "normal", locked_album: bool = Fals
                 "INSERT INTO collection_items (collection_id, file_id, state) VALUES (?, ?, ?)",
                 (cid, fid, "locked" if state == "locked" else "normal"),
             )
+        elif state == "locked":
+            db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid,))
         db.commit()
     return fid
 

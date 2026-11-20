@@ -144,8 +144,7 @@
           {% for a in folders %}
           <button type="button" class="kx-doc-folder-btn album-card doc-folder-card" data-folder-open
                   data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
-                  data-folder-locked="{{ 1 if a.locked else 0 }}"
-                  {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+                  data-folder-locked="{{ 1 if a.locked else 0 }}">
             <span class="kx-doc-folder-icon doc-folder-icon{{ ' is-locked' if a.locked else '' }}" aria-hidden="true">
               {% if a.locked %}
                 {{ ikon('lock', 18) }}
@@ -191,7 +190,6 @@
         <div class="kx-doc-folder-actions doc-folder-actions">
           <button type="button" id="folder-rename" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.folder_rename }}</button>
           <button type="button" id="folder-lock-toggle" class="kx-btn kx-btn-secondary kx-btn-sm"
-                  data-reauth="album.unlock" data-reauth-resource=""
                   data-label-lock="{{ msg.folder_lock_toggle }}"
                   data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
           <button type="button" id="folder-delete" class="kx-btn kx-btn-danger kx-btn-sm">{{ msg.folder_delete }}</button>
@@ -211,7 +209,7 @@
       </div>
     </section>
 
-    <section class="kx-card kx-doc-all" aria-labelledby="doc-all-title">
+    <section id="collection-all-section" class="kx-card kx-doc-all" aria-labelledby="doc-all-title">
       <div class="kx-card-head">
         <h2 class="kx-card-title" id="doc-all-title">Semua</h2>
         <span class="kx-badge kx-badge-ok">{{ semua|length }} dokumen</span>
@@ -232,7 +230,7 @@
       </div>
     </section>
 
-    <section class="kx-card kx-doc-unfiled" aria-labelledby="doc-files-title">
+    <section id="collection-unfiled-section" class="kx-card kx-doc-unfiled" aria-labelledby="doc-files-title">
       <div class="kx-card-head">
         <h2 class="kx-card-title" id="doc-files-title">{{ msg.unfiled_section }}</h2>
         <span class="kx-badge kx-badge-ok">{{ unfiled|length }} dokumen</span>

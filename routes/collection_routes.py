@@ -20,9 +20,9 @@ from flask import (
 from database.db import get_db
 from modules.strings import MSG
 from modules.media.winamp_integration import is_winamp_available
-from routes.collection_shared import halaman_koleksi
+from routes.collection_shared import halaman_koleksi, grant_sah
 from modules.authentication.reauth import (
-    require_grant, consume_grant, find_active_grant,
+    consume_grant, find_active_grant,
 )
 from routes.auth_routes import login_required
 from modules.cryptography import session_keys
@@ -279,10 +279,12 @@ def delete_collection(resource_id: int):
 
 @collection_bp.route("/api/collections/<int:resource_id>/lock", methods=["POST"])
 @login_required
-@require_grant("album.unlock")
 def lock_collection(resource_id: int):
     data = _badan()
     locked = 1 if data.get("locked") in (True, 1, "1", "true", "on") else 0
+    # Mengunci melindungi isi: tidak perlu grant. Membuka kunci wajib grant.
+    if not locked and not grant_sah("album.unlock", resource_id):
+        return _galat(MSG.REAUTH_REQUIRED, "missing", 401)
     with get_db() as db:
         row = _koleksi(db, resource_id, session["user_id"])
         if row is None:
