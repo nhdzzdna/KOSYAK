@@ -266,13 +266,20 @@
     var aksi = document.createElement('div');
     aksi.className = 'collection-item-actions doc-file-actions';
 
-    var tombolPratinjau = document.createElement('button');
-    tombolPratinjau.type = 'button';
-    tombolPratinjau.className = 'btn btn-sm btn-secondary doc-action';
-    tombolPratinjau.setAttribute('data-reauth', 'doc.preview');
-    tombolPratinjau.setAttribute('data-reauth-resource', String(item.id));
-    tombolPratinjau.innerHTML = IKON_PRATINJAU + '<span>Pratinjau</span>';
-    aksi.appendChild(tombolPratinjau);
+    var namaBerkas = String(item.name || '').toLowerCase();
+    var ekstensiTakDidukung = ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
+    var bisaPratinjau = !ekstensiTakDidukung.some(function (ekstensi) {
+      return namaBerkas.slice(-ekstensi.length) === ekstensi;
+    });
+    if (bisaPratinjau) {
+      var tombolPratinjau = document.createElement('button');
+      tombolPratinjau.type = 'button';
+      tombolPratinjau.className = 'btn btn-sm btn-secondary doc-action';
+      tombolPratinjau.setAttribute('data-reauth', 'doc.preview');
+      tombolPratinjau.setAttribute('data-reauth-resource', String(item.id));
+      tombolPratinjau.innerHTML = IKON_PRATINJAU + '<span>Pratinjau</span>';
+      aksi.appendChild(tombolPratinjau);
+    }
 
     aksi.appendChild(buatFormAksi(item.id, 'file.download', 'Unduh', 'btn-success'));
     aksi.appendChild(buatFormAksi(item.id, 'item.delete', 'Hapus', 'btn-danger'));
