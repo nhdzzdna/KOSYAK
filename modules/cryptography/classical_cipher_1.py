@@ -133,3 +133,55 @@ def vigenere_letter_decrypt(ciphertext: str, key: str) -> str:
         result.append(chr((ord(ch) - base - shift) % 26 + base))
         index += 1
     return "".join(result)
+
+
+def vigenere_letter_trace(text: str, key: str, decrypt: bool = False,
+                          limit: int | None = None) -> tuple[list[dict], int]:
+    """
+    Jejak Vigenere klasik A-Z per karakter teks masukan.
+
+    Baris memuat ``posisi``, ``asal``, ``kunci`` (huruf kunci yang dipakai,
+    sesuai kunci yang diketik pengguna), dan ``hasil``. Untuk dekripsi,
+    ``asal`` adalah ciphertext dan ``hasil`` adalah plaintext. Karakter bukan
+    huruf tetap dicatat dengan kunci kosong agar gabungan ``hasil`` sama
+    dengan keluaran penuh selama jejak tidak dipotong.
+
+    Returns
+    -------
+    (list[dict], int)  Daftar jejak dan jumlah karakter seluruhnya.
+    """
+    shifts = _letter_shifts(key)
+    keys = [chr(ord("A") + shift) for shift in shifts]
+    result: list[dict] = []
+    index = 0
+
+    for posisi, ch in enumerate(text):
+        if limit is not None and len(result) >= limit:
+            break
+        if "A" <= ch <= "Z":
+            base = ord("A")
+        elif "a" <= ch <= "z":
+            base = ord("a")
+        else:
+            result.append({
+                "posisi": posisi + 1,
+                "asal": ch,
+                "kunci": "",
+                "hasil": ch,
+            })
+            continue
+        huruf_kunci = keys[index % len(keys)]
+        shift = shifts[index % len(shifts)]
+        if decrypt:
+            hasil = chr((ord(ch) - base - shift) % 26 + base)
+        else:
+            hasil = chr((ord(ch) - base + shift) % 26 + base)
+        result.append({
+            "posisi": posisi + 1,
+            "asal": ch,
+            "kunci": huruf_kunci,
+            "hasil": hasil,
+        })
+        index += 1
+
+    return result, len(text)

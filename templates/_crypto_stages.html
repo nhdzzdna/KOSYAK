@@ -1,0 +1,120 @@
+{# templates/_crypto_stages.html
+   Komponen tunggal untuk merender stage dan tabel jejak Crypto Tools.
+   Kolom tabel mengikuti stage.jenis; seluruh teks berasal dari MSG.
+#}
+{% from "_ikon.html" import ikon %}
+
+{% macro render_trace(stage) %}
+{% if stage.jejak %}
+<details class="kx-accordion kx-ct-jejak">
+  <summary>
+    <span>{{ MSG.CRYPTO_TABEL_JEJAK }}</span>
+    {{ ikon('chevron-down', 16) }}
+  </summary>
+  <div class="kx-accordion-body">
+    <div class="kx-table-wrap">
+      <table class="kx-table kx-ct-trace">
+        <thead>
+          {% if stage.jenis == 'vigenere' %}
+          <tr>
+            <th>{{ MSG.CRYPTO_KOLOM_POSISI }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_ASAL }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_KUNCI }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_HASIL }}</th>
+          </tr>
+          {% elif stage.jenis == 'playfair' %}
+          <tr>
+            <th>{{ MSG.CRYPTO_KOLOM_PASANGAN_ASAL }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_PASANGAN_HASIL }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_ATURAN }}</th>
+          </tr>
+          {% else %}
+          <tr>
+            <th>{{ MSG.CRYPTO_KOLOM_OFFSET }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_SEBELUM }}</th>
+            <th>{{ MSG.CRYPTO_KOLOM_SESUDAH }}</th>
+          </tr>
+          {% endif %}
+        </thead>
+        <tbody>
+          {% for baris in stage.jejak %}
+          {% if stage.jenis == 'vigenere' %}
+          <tr>
+            <td>{{ baris.posisi if baris.posisi is defined else loop.index }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.asal }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.kunci if baris.kunci else '—' }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.hasil }}</td>
+          </tr>
+          {% elif stage.jenis == 'playfair' %}
+          <tr>
+            <td class="kx-ct-sel-mono">{{ baris.pasangan_asal }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.pasangan_hasil }}</td>
+            <td>{{ baris.aturan }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td>{{ loop.index0 }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.sebelum if baris.sebelum else '—' }}</td>
+            <td class="kx-ct-sel-mono">{{ baris.sesudah if baris.sesudah else '—' }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if stage.catatan %}
+    <p class="kx-ct-catatan">{{ stage.catatan }}</p>
+    {% endif %}
+  </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+
+{% macro render_stages(stages, judul, satuan) %}
+<section class="kx-card kx-ct-tahapan" aria-labelledby="ct-tahapan-title">
+  <header class="kx-card-head">
+    <h2 class="kx-card-title" id="ct-tahapan-title">{{ judul }}</h2>
+    <span class="kx-badge kx-badge-accent">{{ stages|length }} {{ satuan }}</span>
+  </header>
+  <div class="kx-card-body">
+    <div class="kx-stepper kx-ct-stepper">
+      {% for stage in stages %}
+      <div class="kx-step is-done">
+        <span class="kx-step-marker" aria-hidden="true">{{ loop.index }}</span>
+        <div class="kx-step-body">
+          <h3 class="kx-step-title">{{ stage.nama }}</h3>
+          {% if stage.keterangan %}
+          <p class="kx-ct-keterangan">{{ stage.keterangan }}</p>
+          {% endif %}
+
+          <div class="kx-ct-step-io">
+            <div class="kx-ct-io">
+              <span class="kx-ct-io-label">{{ MSG.CRYPTO_LABEL_INPUT }}</span>
+              <pre class="kx-code kx-ct-io-blok">{{ stage.input }}</pre>
+            </div>
+            <div class="kx-ct-io">
+              <span class="kx-ct-io-label">{{ MSG.CRYPTO_LABEL_OUTPUT }}</span>
+              <pre class="kx-code kx-ct-io-blok">{{ stage.output }}</pre>
+            </div>
+          </div>
+
+          {% if stage.parameter %}
+          <dl class="kx-kv kx-ct-params">
+            {% for param in stage.parameter %}
+            <div class="kx-kv-row">
+              <dt class="kx-kv-label">{{ param.label }}</dt>
+              <dd class="kx-kv-value">{{ param.nilai }}</dd>
+            </div>
+            {% endfor %}
+          </dl>
+          {% endif %}
+
+          {{ render_trace(stage) }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endmacro %}

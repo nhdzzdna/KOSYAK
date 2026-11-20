@@ -21,7 +21,6 @@
   var inputAksi = document.getElementById('ct-aksi');
   var fieldKunci = document.getElementById('ct-kunci-field');
   var fieldPassphrase = document.getElementById('ct-passphrase-field');
-  var fieldSteps = document.getElementById('ct-steps-field');
   var inputKunci = document.getElementById('ct-kunci');
   var hintKunci = document.querySelector('[data-hint-kunci]');
   var hintVigenere = document.querySelector('[data-hint-vigenere]');
@@ -52,7 +51,6 @@
 
   function perbaruiForm() {
     var cipher = inputCipher.value;
-    var aksi = inputAksi.value;
     var isSuper = cipher === 'super';
     var isVigenere = cipher === 'vigenere';
 
@@ -61,9 +59,6 @@
     }
     if (fieldPassphrase) {
       fieldPassphrase.hidden = !isSuper;
-    }
-    if (fieldSteps) {
-      fieldSteps.hidden = !(isSuper && aksi === 'encrypt');
     }
     if (hintKunci) {
       hintKunci.hidden = isVigenere || isSuper;

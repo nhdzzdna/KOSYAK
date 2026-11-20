@@ -1,10 +1,12 @@
 """
 tests/test_crypto_routes.py
-────────────────────────────
+───────────────────────────
 Uji rute Crypto Tools: form ber-CSRF, kunci teks ChaCha20/Blowfish,
-tahapan Super Encryption, dan ketiadaan keluaran di cookie.
+tabel jejak untuk semua cipher dan aksi, tahapan Super Encryption, serta
+ketiadaan hasil maupun kunci turunan di cookie/HTML.
 """
 
+import base64
 import html
 import re
 
@@ -14,6 +16,12 @@ import config
 from app import create_app
 from database.db import get_db, init_db
 from modules.cryptography import session_keys
+from modules.cryptography.classical_cipher_1 import vigenere_letter_encrypt
+from modules.cryptography.classical_cipher_2 import playfair_encrypt
+from modules.cryptography.modern_cipher_1 import chacha20_encrypt
+from modules.cryptography.modern_cipher_2 import blowfish_encrypt
+from modules.cryptography.super_encryption import super_encrypt
+from routes.crypto_routes import _tool_key
 
 PASSPHRASE = "passphrase-rute-uji-42"
 
@@ -68,14 +76,45 @@ def _first_output(html_text: str):
     return html.unescape(match.group(1)) if match else None
 
 
+def _trace_tables(html_text: str) -> list[str]:
+    return re.findall(
+        r'<table class="kx-table kx-ct-trace">(.*?)</table>', html_text, re.S
+    )
+
+
+def _teks_sel(sel: str, strip: bool = True) -> str:
+    teks = html.unescape(re.sub(r"<[^>]+>", "", sel))
+    return teks.strip() if strip else teks
+
+
+def _header_tabel(tabel: str) -> list[str]:
+    thead = re.search(r"<thead>(.*?)</thead>", tabel, re.S)
+    assert thead, "header tabel jejak tidak ditemukan"
+    return [
+        _teks_sel(sel)
+        for sel in re.findall(r"<th[^>]*>(.*?)</th>", thead.group(1), re.S)
+    ]
+
+
+def _baris_tabel(tabel: str) -> list[list[str]]:
+    baris: list[list[str]] = []
+    for row in re.findall(r"<tr>(.*?)</tr>", tabel, re.S)[1:]:
+        sel = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+        if sel:
+            baris.append([_teks_sel(item, strip=False) for item in sel])
+    return baris
+
+
 class TestCryptoToolsForm:
-    def test_form_contains_csrf_and_steps_option(self, client):
+    def test_form_contains_csrf_and_no_steps_option(self, client):
         page = client.get("/crypto-tools")
         body = page.get_data(as_text=True)
         assert page.status_code == 200
         assert 'name="csrf_token"' in body
-        assert 'name="show_steps"' in body
-        assert "Tampilkan tahapan" in body
+        assert 'name="show_steps"' not in body
+        assert 'id="ct-show-steps"' not in body
+        assert 'id="ct-steps-field"' not in body
+        assert "Tampilkan tahapan" not in body
 
     def test_hint_vigenere_dan_pbkdf2_tersembunyi_bawaan(self, client):
         body = client.get("/crypto-tools").get_data(as_text=True)
@@ -92,11 +131,10 @@ class TestCryptoToolsForm:
 
 
 class TestSuperEncryptionRoute:
-    def test_encrypt_with_steps_shows_each_layer(self, client):
+    def test_encrypt_shows_each_layer(self, client):
         page = _post(
             client, cipher="super", action="encrypt",
             text="Halo Super Encryption", passphrase=PASSPHRASE,
-            show_steps="1",
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
@@ -107,14 +145,15 @@ class TestSuperEncryptionRoute:
         ):
             assert label in body
 
-    def test_encrypt_without_steps_hides_layers(self, client):
+    def test_encrypt_always_shows_layers_without_checkbox(self, client):
         page = _post(
             client, cipher="super", action="encrypt",
             text="Halo", passphrase=PASSPHRASE,
         )
         body = page.get_data(as_text=True)
         assert "CXSE2." in body
-        assert "Layer 1 — Vigenere" not in body
+        assert "Layer 1 — Vigenere" in body
+        assert len(_trace_tables(body)) == 4
 
     def test_decrypt_roundtrip(self, client):
         pesan = "Pesan terenkripsi lewat rute"
@@ -143,6 +182,7 @@ class TestSuperEncryptionRoute:
         body = dec.get_data(as_text=True)
         assert "CXSE2." not in (_first_output(body) or "")
         assert "kx-infobox-danger" in body
+        assert not _trace_tables(body)
 
     def test_output_not_written_to_cookie(self, client):
         enc = _post(
@@ -218,14 +258,14 @@ class TestIndividualCipherRoute:
 
 
 class TestSuperEncryptionTraceRoute:
-    def test_steps_show_trace_tables_and_limits(self, client):
+    def test_encrypt_trace_tables_and_limits(self, client):
         page = _post(
             client, cipher="super", action="encrypt",
-            text="A" * 300, passphrase=PASSPHRASE, show_steps="1",
+            text="A" * 300, passphrase=PASSPHRASE,
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
-        assert "kx-ct-trace" in body
+        assert len(_trace_tables(body)) == 4
         assert "Pasangan Asal" in body
         assert "Sebelum (hex)" in body
         assert "ditampilkan 200 pertama" in body
@@ -233,11 +273,122 @@ class TestSuperEncryptionTraceRoute:
         assert "ditampilkan 64 byte pertama" in body
         assert PASSPHRASE not in body
 
-    def test_steps_mask_vigenere_key(self, client):
+    def test_encrypt_masks_vigenere_key(self, client):
         page = _post(
             client, cipher="super", action="encrypt",
-            text="Halo Dunia", passphrase=PASSPHRASE, show_steps="1",
+            text="Halo Dunia", passphrase=PASSPHRASE,
         )
         body = page.get_data(as_text=True)
         assert "***" in body
         assert PASSPHRASE not in body
+
+
+@pytest.mark.parametrize("cipher, aksi, kunci", [
+    ("vigenere", "encrypt", "KUNCI"),
+    ("vigenere", "decrypt", "KUNCI"),
+    ("playfair", "encrypt", "KUNCIUTAMA"),
+    ("playfair", "decrypt", "KUNCIUTAMA"),
+    ("chacha20", "encrypt", "kunci-teks-42"),
+    ("chacha20", "decrypt", "kunci-teks-42"),
+    ("blowfish", "encrypt", "kunci-teks-42"),
+    ("blowfish", "decrypt", "kunci-teks-42"),
+])
+def test_tabel_jejak_tunggal_tiap_cipher_dan_aksi(client, cipher, aksi, kunci):
+    """Delapan kombinasi cipher x aksi memuat satu tabel jejak yang benar."""
+    pesan = "TEKSRAHASIA" if cipher == "playfair" else "Halo Jejak 42"
+    enkripsi = aksi == "encrypt"
+    if cipher == "vigenere":
+        masukan = pesan if enkripsi else vigenere_letter_encrypt(pesan, kunci)
+    elif cipher == "playfair":
+        masukan = pesan if enkripsi else playfair_encrypt(pesan, kunci)
+    else:
+        bkey = _tool_key(kunci)
+        if cipher == "chacha20":
+            masukan = pesan if enkripsi else chacha20_encrypt(pesan, bkey)
+        else:
+            masukan = pesan if enkripsi else blowfish_encrypt(pesan, bkey)
+
+    page = _post(
+        client, cipher=cipher, action=aksi, text=masukan, key=kunci,
+    )
+    body = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert "kx-infobox-danger" not in body
+    assert "kx-ct-tahapan" in body
+
+    tabel = _trace_tables(body)
+    assert len(tabel) == 1, "setiap alat tunggal hanya menghasilkan satu tabel jejak"
+    if cipher == "vigenere":
+        assert _header_tabel(tabel[0]) == ["Posisi", "Asal", "Kunci", "Hasil"]
+        batas = 200
+    elif cipher == "playfair":
+        assert _header_tabel(tabel[0]) == [
+            "Pasangan Asal", "Pasangan Hasil", "Aturan",
+        ]
+        batas = 100
+    else:
+        assert _header_tabel(tabel[0]) == [
+            "Offset", "Sebelum (hex)", "Sesudah (hex)",
+        ]
+        batas = 64
+
+    baris = _baris_tabel(tabel[0])
+    assert baris
+    assert len(baris) <= batas
+
+    # Kunci turunan (_tool_key) dan kunci yang diketik tidak boleh bocor.
+    if cipher in ("chacha20", "blowfish"):
+        assert kunci not in body
+        assert _tool_key(kunci).hex() not in body
+    else:
+        assert kunci not in body
+
+    hasil = _first_output(body)
+    if cipher == "vigenere":
+        assert "".join(b[3] for b in baris) == (hasil if enkripsi else pesan)
+        assert all(b[2] for b in baris if b[1].isalpha())
+    elif cipher == "playfair":
+        assert "".join(b[1] for b in baris) == (hasil if enkripsi else pesan)
+        assert all(b[2] in ("baris sama", "kolom sama", "persegi") for b in baris)
+    elif enkripsi:
+        assert bytes.fromhex("".join(b[2] for b in baris)) == base64.b64decode(
+            hasil.split(":", 1)[1]
+        )
+    else:
+        # Byte padding Blowfish tidak punya pasangan plaintext; sel itu memakai em dash.
+        heksa = "".join(b[2] for b in baris if b[2] and b[2] != "—")
+        assert bytes.fromhex(heksa).decode("utf-8") == pesan
+
+
+@pytest.mark.parametrize("aksi", ["encrypt", "decrypt"])
+def test_jejak_super_enkripsi_dan_dekripsi(client, aksi):
+    """Super menampilkan empat jejak; dekripsi memakai urutan layer terbalik."""
+    pesan = "Halo Jejak Super"
+    enkripsi = aksi == "encrypt"
+    masukan = pesan if enkripsi else super_encrypt(pesan, passphrase=PASSPHRASE)
+    page = _post(
+        client, cipher="super", action=aksi, text=masukan, passphrase=PASSPHRASE,
+    )
+    body = page.get_data(as_text=True)
+    assert page.status_code == 200
+    assert "kx-infobox-danger" not in body
+    assert PASSPHRASE not in body
+
+    urutan = (
+        ["Layer 1 — Vigenere", "Layer 2 — Playfair",
+         "Layer 3 — ChaCha20", "Layer 4 — Blowfish-CBC"]
+        if enkripsi else
+        ["Layer 4 — Blowfish-CBC", "Layer 3 — ChaCha20",
+         "Layer 2 — Playfair", "Layer 1 — Vigenere"]
+    )
+    posisi = [body.index(label) for label in urutan]
+    assert posisi == sorted(posisi)
+
+    tabel = _trace_tables(body)
+    assert len(tabel) == 4
+    for potongan, batas in zip(tabel, [200, 100, 64, 64]):
+        assert 0 < len(_baris_tabel(potongan)) <= batas
+
+    if not enkripsi:
+        # Tabel Vigenere adalah layer terakhir pada dekripsi.
+        assert "".join(b[3] for b in _baris_tabel(tabel[3])) == pesan

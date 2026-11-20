@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_crypto_stages.html" import render_stages with context %}
 {% block title %}Crypto Tools — KOSYAK{% endblock %}
 {% block page_title %}Crypto Tools{% endblock %}
 {% block styles %}
@@ -103,11 +104,6 @@
             <p class="kx-ct-hint" data-hint-passphrase>{{ MSG.CRYPTO_SUPER_KEY_HINT }}</p>
           </div>
 
-          <label class="kx-checkbox kx-ct-steps" id="ct-steps-field">
-            <input type="checkbox" name="show_steps" value="1" id="ct-show-steps" />
-            <span>Tampilkan tahapan</span>
-          </label>
-
           <button type="submit" class="kx-btn kx-btn-primary kx-ct-proses" id="ct-proses">
             {{ ikon('lock', 15) }}<span id="ct-proses-label">Proses</span>
           </button>
@@ -149,101 +145,7 @@
   </form>
 
   {% if stages %}
-  <!-- ── Tahapan Super Encryption ─────────────────────────────────────── -->
-  <section class="kx-card kx-ct-tahapan" aria-labelledby="ct-tahapan-title">
-    <header class="kx-card-head">
-      <h2 class="kx-card-title" id="ct-tahapan-title">Tahapan Super Encryption</h2>
-      <span class="kx-badge kx-badge-accent">{{ stages|length }} layer</span>
-    </header>
-    <div class="kx-card-body">
-      <div class="kx-stepper kx-ct-stepper">
-        {% for stage in stages %}
-        <div class="kx-step is-done">
-          <span class="kx-step-marker" aria-hidden="true">{{ loop.index }}</span>
-          <div class="kx-step-body">
-            <h3 class="kx-step-title">{{ stage.nama }}</h3>
-            {% if stage.keterangan %}
-            <p class="kx-ct-keterangan">{{ stage.keterangan }}</p>
-            {% endif %}
-
-            <div class="kx-ct-step-io">
-              <div class="kx-ct-io">
-                <span class="kx-ct-io-label">Input</span>
-                <pre class="kx-code kx-ct-io-blok">{{ stage.input }}</pre>
-              </div>
-              <div class="kx-ct-io">
-                <span class="kx-ct-io-label">Output</span>
-                <pre class="kx-code kx-ct-io-blok">{{ stage.output }}</pre>
-              </div>
-            </div>
-
-            {% if stage.parameter %}
-            <dl class="kx-kv kx-ct-params">
-              {% for param in stage.parameter %}
-              <div class="kx-kv-row">
-                <dt class="kx-kv-label">{{ param.label }}</dt>
-                <dd class="kx-kv-value">{{ param.nilai }}</dd>
-              </div>
-              {% endfor %}
-            </dl>
-            {% endif %}
-
-            {% if stage.jejak %}
-            <details class="kx-accordion kx-ct-jejak">
-              <summary>
-                <span>Tabel jejak</span>
-                {{ ikon('chevron-down', 16) }}
-              </summary>
-              <div class="kx-accordion-body">
-                <div class="kx-table-wrap">
-                  <table class="kx-table kx-ct-trace">
-                    <thead>
-                      {% if stage.jenis == "vigenere" %}
-                      <tr><th>Posisi</th><th>Asal</th><th>Kunci</th><th>Hasil</th></tr>
-                      {% elif stage.jenis == "playfair" %}
-                      <tr><th>Pasangan Asal</th><th>Pasangan Hasil</th><th>Aturan</th></tr>
-                      {% else %}
-                      <tr><th>Offset</th><th>Sebelum (hex)</th><th>Sesudah (hex)</th></tr>
-                      {% endif %}
-                    </thead>
-                    <tbody>
-                      {% for baris in stage.jejak %}
-                      {% if stage.jenis == "vigenere" %}
-                      <tr>
-                        <td>{{ loop.index }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.asal }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.kunci or "&mdash;" }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.hasil }}</td>
-                      </tr>
-                      {% elif stage.jenis == "playfair" %}
-                      <tr>
-                        <td class="kx-ct-sel-mono">{{ baris.pasangan_asal }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.pasangan_hasil }}</td>
-                        <td>{{ baris.aturan }}</td>
-                      </tr>
-                      {% else %}
-                      <tr>
-                        <td>{{ loop.index0 }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.sebelum }}</td>
-                        <td class="kx-ct-sel-mono">{{ baris.sesudah }}</td>
-                      </tr>
-                      {% endif %}
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-                {% if stage.catatan %}
-                <p class="kx-ct-catatan">{{ stage.catatan }}</p>
-                {% endif %}
-              </div>
-            </details>
-            {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
+  {{ render_stages(stages, stages_judul, stages_satuan) }}
   {% endif %}
 </div>
 {% endblock %}

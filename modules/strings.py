@@ -219,6 +219,79 @@ class MSG:
         "PBKDF2-HMAC-SHA256 bersalt dari kunci rahasia ini."
     )
 
+    # Judul, label kolom, dan keterangan tabel jejak Crypto Tools.
+    CRYPTO_TAHAPAN_SUPER       = "Tahapan Super Encryption"
+    CRYPTO_TAHAPAN_TUNGGAL     = "Tahapan {nama} — {aksi}"
+    CRYPTO_AKSI_ENKRIPSI       = "Enkripsi"
+    CRYPTO_AKSI_DEKRIPSI       = "Dekripsi"
+    CRYPTO_LABEL_LAYER         = "layer"
+    CRYPTO_LABEL_LANGKAH       = "langkah"
+    CRYPTO_TABEL_JEJAK         = "Tabel jejak"
+    CRYPTO_LABEL_INPUT         = "Input"
+    CRYPTO_LABEL_OUTPUT        = "Output"
+    CRYPTO_KOLOM_POSISI        = "Posisi"
+    CRYPTO_KOLOM_ASAL          = "Asal"
+    CRYPTO_KOLOM_KUNCI         = "Kunci"
+    CRYPTO_KOLOM_HASIL         = "Hasil"
+    CRYPTO_KOLOM_PASANGAN_ASAL = "Pasangan Asal"
+    CRYPTO_KOLOM_PASANGAN_HASIL = "Pasangan Hasil"
+    CRYPTO_KOLOM_ATURAN        = "Aturan"
+    CRYPTO_KOLOM_OFFSET        = "Offset"
+    CRYPTO_KOLOM_SEBELUM       = "Sebelum (hex)"
+    CRYPTO_KOLOM_SESUDAH       = "Sesudah (hex)"
+
+    CRYPTO_STAGE_VIGENERE_ENCRYPT = (
+        "Setiap huruf digeser menurut huruf kunci yang diketik. Huruf besar/kecil "
+        "dipertahankan; karakter bukan huruf dilewati tanpa memajukan indeks kunci."
+    )
+    CRYPTO_STAGE_VIGENERE_DECRYPT = (
+        "Setiap huruf ciphertext dikembalikan menurut huruf kunci yang diketik. "
+        "Karakter bukan huruf dilewati tanpa memajukan indeks kunci."
+    )
+    CRYPTO_STAGE_PLAYFAIR_ENCRYPT = (
+        "Pasangan huruf diubah menurut aturan baris sama, kolom sama, atau persegi. "
+        "Huruf J dibaca sebagai I; huruf pengisi X disisipkan pada huruf kembar atau ganjil."
+    )
+    CRYPTO_STAGE_PLAYFAIR_DECRYPT = (
+        "Pasangan huruf ciphertext dikembalikan menurut aturan baris sama, kolom sama, "
+        "atau persegi. Huruf J dibaca sebagai I; huruf pengisi X hasil enkripsi dibuang."
+    )
+    CRYPTO_STAGE_CHACHA_ENCRYPT = (
+        "Cipher stream; jejak per byte membandingkan plaintext dengan ciphertext. "
+        "Nonce ditampilkan; kunci tidak ditampilkan."
+    )
+    CRYPTO_STAGE_CHACHA_DECRYPT = (
+        "Cipher stream; sebelum adalah byte ciphertext dan sesudah adalah byte plaintext. "
+        "Nonce ditampilkan; kunci tidak ditampilkan."
+    )
+    CRYPTO_STAGE_BLOWFISH_ENCRYPT = (
+        "Cipher blok mode CBC dengan padding PKCS#7; jejak per byte membandingkan "
+        "plaintext dengan ciphertext. IV ditampilkan; kunci tidak ditampilkan."
+    )
+    CRYPTO_STAGE_BLOWFISH_DECRYPT = (
+        "Dekripsi blok mode CBC dengan padding PKCS#7; sebelum adalah byte ciphertext "
+        "dan sesudah adalah byte plaintext setelah padding dibuang. "
+        "IV ditampilkan; kunci tidak ditampilkan."
+    )
+    CRYPTO_LABEL_PERSIAPAN       = "Persiapan teks"
+    CRYPTO_LABEL_PENGISI         = "Huruf pengisi"
+    CRYPTO_PLAYFAIR_PERSIAPAN    = "J dibaca sebagai I; karakter non-huruf dilewati."
+    CRYPTO_PLAYFAIR_ISI_ENKRIPSI = "X disisipkan pada huruf kembar atau ganjil."
+    CRYPTO_PLAYFAIR_ISI_DEKRIPSI = "X pengisi dibuang setelah dekripsi."
+    CRYPTO_LABEL_NONCE           = "Nonce"
+    CRYPTO_LABEL_PANJANG_NONCE   = "Panjang nonce"
+    CRYPTO_LABEL_IV              = "IV"
+    CRYPTO_LABEL_PANJANG_IV      = "Panjang IV"
+    CRYPTO_LABEL_MODE            = "Mode"
+    CRYPTO_LABEL_PADDING         = "Padding"
+    CRYPTO_LABEL_UKURAN_BLOK     = "Ukuran blok"
+    CRYPTO_NILAI_MODE_STREAM     = "stream"
+    CRYPTO_NILAI_MODE_CBC        = "CBC"
+    CRYPTO_NILAI_TANPA_PADDING   = "tidak ada"
+    CRYPTO_NILAI_PKCS7           = "PKCS#7"
+    CRYPTO_NILAI_16_BYTE         = "16 byte"
+    CRYPTO_NILAI_8_BYTE          = "8 byte"
+
     # â”€â”€ Media Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_DECRYPT_FAILED     = "Dekripsi file media gagal."
     MEDIA_WINAMP_OPENED      = "File dibuka di Winamp. Berkas sementara akan dihapus otomatis."
