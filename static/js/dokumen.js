@@ -134,7 +134,12 @@
   }
 
   function tutupPratinjau() {
-    modal.style.display = 'none';
+    if (window.KX && window.KX.modal) {
+      window.KX.modal.tutup(modal);
+    } else {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
     panggungModal.innerHTML = '';
     judulModal.textContent = '';
     if (urlBlob) {
@@ -155,7 +160,12 @@
   function pasangPanggung(elemen) {
     panggungModal.innerHTML = '';
     panggungModal.appendChild(elemen);
-    modal.style.display = 'flex';
+    if (window.KX && window.KX.modal) {
+      window.KX.modal.buka(modal);
+    } else {
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
   }
 
   function tampilkanTeks(data) {
@@ -241,7 +251,7 @@
     }
   });
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && modal.style.display === 'flex') {
+    if (event.key === 'Escape' && (urlBlob || panggungModal.firstChild)) {
       tutupPratinjau();
     }
   });

@@ -19,8 +19,8 @@ CSP = (
     "default-src 'self'; script-src 'self'; "
     "style-src 'self' 'unsafe-inline'; "
     "font-src 'self'; "
-    "img-src 'self' data:; media-src 'self'; connect-src 'self'; "
-    "frame-ancestors 'none'"
+    "img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; "
+    "frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'"
 )
 
 SUMBER_FONT_DIIZINKAN = ()
@@ -53,7 +53,11 @@ def _periksa_header(header):
     assert header.get("X-Content-Type-Options") == "nosniff"
     assert header.get("X-Frame-Options") == "DENY"
     assert header.get("Referrer-Policy") == "no-referrer"
-    assert header.get("Content-Security-Policy") == CSP
+    csp = header.get("Content-Security-Policy", "")
+    assert csp == CSP
+    assert "img-src 'self' data: blob:" in csp
+    assert "frame-src 'self' blob:" in csp
+    assert "object-src 'none'" in csp
 
 
 def test_header_pada_html_json_dan_404(app):
