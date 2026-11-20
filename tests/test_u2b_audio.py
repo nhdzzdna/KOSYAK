@@ -62,7 +62,7 @@ def client(app):
     return c
 
 
-def _unggah_audio_db(nama: str, state: str = "normal"):
+def _unggah_audio_db(nama: str, state: str = "normal", album: bool = False):
     db_key = purpose_key(DEK, "database")
     fkey = purpose_key(DEK, "file")
     stored = generate_stored_name()
@@ -82,7 +82,7 @@ def _unggah_audio_db(nama: str, state: str = "normal"):
             (1, name_token, stored, "audio", len(ISI_AUDIO), enc_res["sha256_plaintext"], enc_res["sha256_ciphertext"]),
         )
         fid = cur.lastrowid
-        if state == "locked":
+        if album:
             col_name_enc = encrypt_field("Folder Audio Rahasia", db_key, field_aad(1, "collections", "name_enc"))
             cur_col = db.execute(
                 "INSERT INTO collections (user_id, name_enc, kind, locked) VALUES (?, ?, ?, ?)",
@@ -91,14 +91,16 @@ def _unggah_audio_db(nama: str, state: str = "normal"):
             cid = cur_col.lastrowid
             db.execute(
                 "INSERT INTO collection_items (collection_id, file_id, state) VALUES (?, ?, ?)",
-                (cid, fid, "locked"),
+                (cid, fid, "locked" if state == "locked" else "normal"),
             )
+        elif state == "locked":
+            db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid,))
         db.commit()
     return fid
 
 
 def test_halaman_audio_badge_folder_di_semua(client):
-    _unggah_audio_db("trek_folder.mp3", state="locked")
+    _unggah_audio_db("trek_folder.mp3", album=True)
     resp = client.get("/audio")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)

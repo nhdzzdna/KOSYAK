@@ -292,6 +292,17 @@ class TestAlbumTerkunci:
         assert client.post(f"/api/collections/{cid}/lock", json={"locked": 0},
                            headers={"X-CSRFToken": _csrf(client)}).status_code == 401
 
+    def test_mengunci_tanpa_grant_berhasil(self, client):
+        cid = _buat_koleksi(client, "Terbuka")
+        resp = client.post(f"/api/collections/{cid}/lock", json={"locked": 1},
+                           headers={"X-CSRFToken": _csrf(client)})
+        assert resp.status_code == 200
+        assert resp.get_json()["locked"] is True
+        with get_db() as db:
+            row = db.execute("SELECT locked FROM collections WHERE id=?",
+                             (cid,)).fetchone()
+        assert row["locked"] == 1
+
     def test_grant_berulang_lalu_kedaluwarsa(self, client, monkeypatch):
         cid = _buat_koleksi(client, "Rahasia", locked=True)
         fid = _buat_media(1, "foto.png", _png())
@@ -351,10 +362,10 @@ class TestItemTerkunci:
         # Mengunci tidak memerlukan grant.
         assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
-        # Item terkunci tetap tampil di bagian "Semua" dengan penanda.
+        # Item terkunci tidak diulang di bagian "Semua"; tetap ada di folder.
         body = client.get("/media-vault").get_data(as_text=True)
-        assert f'data-file-id="{fid}"' in body
-        assert 'data-locked="1"' in body
+        assert f'data-file-id="{fid}"' not in body
+        assert 'data-locked="1"' not in body
 
         data = client.get(f"/api/collections/{cid}/items").get_json()
         assert data["items"][0]["id"] == fid

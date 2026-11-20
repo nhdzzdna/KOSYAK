@@ -152,8 +152,7 @@
             <button type="button" class="kx-media-album-card album-card{% if a.locked %} is-locked{% endif %}" data-album-open
                     data-album-id="{{ a.id }}" data-album-name="{{ a.name }}"
                     data-album-locked="{{ 1 if a.locked else 0 }}"
-                    data-album-kind="{{ a.kind }}"
-                    {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+                    data-album-kind="{{ a.kind }}">
               <div class="kx-media-album-cover album-cover{% if a.locked %} album-cover-locked{% endif %}">
                 {% if a.locked %}
                   <span class="album-cover-icon" aria-hidden="true">{{ ikon('lock', 22) }}</span>
@@ -193,8 +192,7 @@
         <div class="kx-card-body">
           <div class="kx-media-album-actions media-detail-actions">
             <button type="button" id="album-rename" class="kx-btn kx-btn-secondary kx-btn-sm">Ganti nama album</button>
-            <button type="button" id="album-lock-toggle" class="kx-btn kx-btn-secondary kx-btn-sm"
-                    data-reauth="album.unlock" data-reauth-resource="">Kunci album</button>
+            <button type="button" id="album-lock-toggle" class="kx-btn kx-btn-secondary kx-btn-sm">Kunci album</button>
             <button type="button" id="album-delete" class="kx-btn kx-btn-danger kx-btn-sm">Hapus album</button>
           </div>
           <form id="album-rename-form" class="kx-doc-folder-rename-form media-rename-form" hidden novalidate>
@@ -213,7 +211,7 @@
       </section>
 
       <!-- Semua Media -->
-      <section class="kx-card" aria-labelledby="media-all-title">
+      <section id="collection-all-section" class="kx-card" aria-labelledby="media-all-title">
         <div class="kx-card-head">
           <h2 class="kx-card-title" id="media-all-title">Semua</h2>
           <span class="kx-badge kx-badge-ok">{{ semua|length }} aset</span>
@@ -247,7 +245,7 @@
       </section>
 
       <!-- Tanpa Album -->
-      <section class="kx-card" aria-labelledby="media-gallery-title">
+      <section id="collection-unfiled-section" class="kx-card" aria-labelledby="media-gallery-title">
         <div class="kx-card-head">
           <h2 class="kx-card-title" id="media-gallery-title">Tanpa album</h2>
           <span class="kx-badge kx-badge-ok">{{ unfiled|length }} aset</span>

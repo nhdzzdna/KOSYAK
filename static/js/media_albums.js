@@ -1,10 +1,11 @@
 /**
  * static/js/media_albums.js
- * ─────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Galeri album Media Vault (U2b P6):
  * - Membuka album, memuat isi via API, penampil media (KX.modal) untuk gambar & video
  * - Pemilihan banyak berkas dan sinkronisasi dengan KX.aksiMengambang
  * - Pencarian media lokal di sisi klien
+ * - Aksi menu titik tiga (â‹¯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah via KX.konfirmasiHapus)
  * - Aksi menu titik tiga (⋯): Unduh, Pindahkan (bila ada), Hapus (ke Sampah via KX.konfirmasiHapus)
  * - Integrasi pengunci item generik item_lock.js (scope item.view)
  */
@@ -37,6 +38,17 @@
   var cekBuatTerkunci = document.getElementById('album-create-locked');
   var pemuatAlbum = document.getElementById('album-loading');
   var kosongAlbum = document.getElementById('album-empty');
+  var bagianSemua = document.getElementById('collection-all-section');
+  var bagianTanpaAlbum = document.getElementById('collection-unfiled-section');
+
+  var IKON_KUNCI =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/>' +
+    '<path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>';
+  var IKON_GAMBAR =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/>' +
+    '<circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
 
   var penampil = document.getElementById('media-viewer');
   var panggung = document.getElementById('viewer-stage');
@@ -84,6 +96,31 @@
     return window.CryptixReauth.grantFor(scope, resource);
   }
 
+  function mintaGrant(scope, resource) {
+    if (window.CryptixLock && typeof window.CryptixLock.mintaGrant === 'function') {
+      return window.CryptixLock.mintaGrant(scope, resource);
+    }
+    var token = grantUntuk(scope, resource);
+    if (token) {
+      return Promise.resolve(token);
+    }
+    return Promise.reject(new Error(pesan('error')));
+  }
+
+  function tampilkanSukses(teks) {
+    if (window.KX && typeof window.KX.toast === 'function') {
+      window.KX.toast(teks || pesan('state'), 'success');
+    }
+  }
+
+  function tampilkanDaftarSemua(tampil) {
+    [bagianSemua, bagianTanpaAlbum].forEach(function (bagian) {
+      if (bagian) {
+        bagian.hidden = !tampil;
+      }
+    });
+  }
+
   function urai(resp) {
     return resp.json().catch(function () { return {}; }).then(function (data) {
       if (!resp.ok || data.success === false) {
@@ -120,7 +157,7 @@
     return (n / 1024).toFixed(1) + ' KB';
   }
 
-  // ── Buat kartu dinamis untuk isi album ────────────────────────────────────
+  // â”€â”€ Buat kartu dinamis untuk isi album â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function buatKartu(item, albumId) {
     var terkunci = item.state === 'locked';
     var kartu = document.createElement('div');
@@ -168,7 +205,7 @@
     if (item.file_type === 'video') {
       var vOverlay = document.createElement('span');
       vOverlay.className = 'kx-media-video-overlay';
-      vOverlay.textContent = '▶';
+      vOverlay.textContent = 'â–¶';
       tombolBuka.appendChild(vOverlay);
     }
     if (terkunci) {
@@ -191,7 +228,7 @@
 
     var meta = document.createElement('div');
     meta.className = 'kx-media-card-meta media-meta';
-    meta.textContent = ukuranTeks(item.file_size) + ' · ' + String(item.uploaded_at || '').slice(0, 16);
+    meta.textContent = ukuranTeks(item.file_size) + ' Â· ' + String(item.uploaded_at || '').slice(0, 16);
     if (terkunci) {
       var badgeKunci = document.createElement('span');
       badgeKunci.className = 'kx-badge kx-badge-warn item-lock-note';
@@ -227,20 +264,21 @@
     }));
   }
 
-  function bukaAlbum(id, nama, terkunci) {
+  function bukaAlbum(id, nama, terkunci, grantToken) {
     albumAktif = String(id);
     albumTerkunci = Boolean(terkunci);
     detail.hidden = false;
+    tampilkanDaftarSemua(false);
     judulAlbum.textContent = nama || '';
     tombolKunciAlbum.textContent = albumTerkunci ? 'Buka kunci album' : 'Kunci album';
-    tombolKunciAlbum.setAttribute('data-reauth-resource', String(id));
     formGantiNamaAlbum.hidden = true;
     daftarItem.innerHTML = '';
     if (pemuatAlbum) pemuatAlbum.hidden = false;
     if (kosongAlbum) kosongAlbum.hidden = true;
     bersihkanGalat();
 
-    var grant = albumTerkunci ? grantUntuk('album.unlock', String(id)) : null;
+    var grant = grantToken || (albumTerkunci
+      ? grantUntuk('album.unlock', String(id)) : null);
     if (albumTerkunci && !grant) {
       if (pemuatAlbum) pemuatAlbum.hidden = true;
       tampilkanGalat(pesan('error'));
@@ -354,7 +392,7 @@
             if (meta) {
               var pemisah = document.createElement('span');
               pemisah.setAttribute('aria-hidden', 'true');
-              pemisah.textContent = '·';
+              pemisah.textContent = 'Â·';
               var baru = document.createElement('span');
               baru.className = 'kx-badge kx-media-folder-badge';
               baru.setAttribute('data-folder-badge', '');
@@ -397,7 +435,63 @@
     });
   }
 
-  // ── Penampil Media (KX.modal) ─────────────────────────────────────────────
+  function perbaruiTombolKunciAlbum() {
+    if (tombolKunciAlbum) {
+      tombolKunciAlbum.textContent = albumTerkunci ? 'Buka kunci album' : 'Kunci album';
+    }
+  }
+
+  function perbaruiKartuAlbum(id, terkunci) {
+    var kartu = document.querySelector(
+      '[data-album-open][data-album-id="' + String(id) + '"]');
+    if (!kartu) {
+      return;
+    }
+    kartu.setAttribute('data-album-locked', terkunci ? '1' : '0');
+    kartu.classList.toggle('is-locked', terkunci);
+    var cover = kartu.querySelector('.kx-media-album-cover');
+    if (!cover) {
+      return;
+    }
+    if (terkunci) {
+      cover.dataset.isiSebelumnya = cover.innerHTML;
+      cover.classList.add('album-cover-locked');
+      cover.innerHTML = '<span class="album-cover-icon" aria-hidden="true">' +
+        IKON_KUNCI + '</span>';
+    } else {
+      cover.classList.remove('album-cover-locked');
+      cover.innerHTML = cover.dataset.isiSebelumnya ||
+        ('<span class="album-cover-icon" aria-hidden="true">' +
+         IKON_GAMBAR + '</span>');
+      delete cover.dataset.isiSebelumnya;
+    }
+  }
+
+  function ubahKunciAlbum() {
+    if (!albumAktif) {
+      return null;
+    }
+    var id = albumAktif;
+    var akanTerkunci = !albumTerkunci;
+    intent = null;
+    // Mengunci adalah tindakan melindungi: tanpa grant. Membuka kunci wajib grant.
+    var siap = akanTerkunci
+      ? Promise.resolve(null)
+      : mintaGrant('album.unlock', id);
+    return siap.then(function (grant) {
+      return kirim('/api/collections/' + id + '/lock',
+                   { locked: akanTerkunci }, grant);
+    }).then(function (data) {
+      albumTerkunci = akanTerkunci;
+      perbaruiTombolKunciAlbum();
+      perbaruiKartuAlbum(id, akanTerkunci);
+      tampilkanSukses(data.message);
+    }).catch(function (err) {
+      tampilkanGalat(err.message);
+    });
+  }
+
+  // â”€â”€ Penampil Media (KX.modal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function tutupPenampil() {
     if (!penampil) return;
     if (window.KX && window.KX.modal) {
@@ -472,7 +566,7 @@
     bukaPenampil(kartu);
   }
 
-  // ── Event Listener ───────────────────────────────────────────────────────
+  // â”€â”€ Event Listener â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('[data-menu-dropdown]').forEach(function (m) {
@@ -482,7 +576,7 @@
   });
 
   document.addEventListener('click', function (event) {
-    // Menu titik tiga (⋯)
+    // Menu titik tiga (â‹¯)
     var btnMenu = event.target.closest('[data-menu-toggle]');
     var semuaMenu = document.querySelectorAll('[data-menu-dropdown]');
     if (btnMenu) {
@@ -523,14 +617,31 @@
 
     // Buka album
     var album = event.target.closest('[data-album-open]');
-    if (album && album.getAttribute('data-album-locked') !== '1') {
-      bukaAlbum(album.getAttribute('data-album-id'), album.getAttribute('data-album-name'), false);
+    if (album) {
+      var albumId = album.getAttribute('data-album-id');
+      var albumNama = album.getAttribute('data-album-name');
+      if (album.getAttribute('data-album-locked') === '1') {
+        intent = null;
+        mintaGrant('album.unlock', albumId).then(function (token) {
+          bukaAlbum(albumId, albumNama, true, token);
+        }).catch(function (err) {
+          tampilkanGalat(err.message);
+        });
+      } else {
+        bukaAlbum(albumId, albumNama, false);
+      }
+      return;
+    }
+
+    if (event.target === tombolKunciAlbum) {
+      ubahKunciAlbum();
       return;
     }
 
     if (event.target === tombolKembali) {
       detail.hidden = true;
       albumAktif = null;
+      tampilkanDaftarSemua(true);
       return;
     }
 
@@ -644,12 +755,8 @@
     var detailGrant = event.detail || {};
     var scope = detailGrant.scope;
     if (!intent) return;
-    if (scope === 'album.unlock') {
-      if (intent.jenis === 'album') {
-        bukaAlbum(intent.id, intent.nama, intent.terkunci);
-      } else if (intent.jenis === 'pindah') {
-        pindahkan();
-      }
+    if (scope === 'album.unlock' && intent.jenis === 'pindah') {
+      pindahkan();
     } else if (scope === 'item.unlock' && intent.jenis === 'status') {
       ubahStatus(intent.state, detailGrant.token);
     }
@@ -657,19 +764,15 @@
   });
 
   document.addEventListener('pointerdown', function (event) {
-    var pemicu = event.target.closest('[data-reauth], [data-album-open]');
-    if (pemicu) {
-      intent = null;
-      if (pemicu.hasAttribute('data-album-open')) {
-        intent = {
-          jenis: 'album',
-          id: pemicu.getAttribute('data-album-id'),
-          nama: pemicu.getAttribute('data-album-name'),
-          terkunci: pemicu.getAttribute('data-album-locked') === '1'
-        };
-      } else if (pemicu.id === 'move-button') {
-        intent = { jenis: 'pindah' };
-      }
+    var pemicu = event.target.closest('[data-reauth]');
+    if (!pemicu) {
+      return;
+    }
+    intent = null;
+    if (pemicu.id === 'move-button') {
+      intent = { jenis: 'pindah' };
+    } else if (pemicu.id === 'unlock-items-button') {
+      intent = { jenis: 'status', state: 'normal' };
     }
   }, true);
 

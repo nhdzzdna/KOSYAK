@@ -231,10 +231,8 @@ class TestKunciItem:
         assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
         body = client.get("/media-vault").get_data(as_text=True)
-        assert f'data-file-id="{fid}"' in body
-        assert 'data-locked="1"' in body
-        assert "item-terkunci" in body
-        assert "Terkunci" in body
+        assert f'data-file-id="{fid}"' not in body
+        assert 'data-locked="1"' not in body
 
         data = client.get(f"/api/collections/{cid}/items").get_json()
         assert data["items"][0]["id"] == fid

@@ -196,6 +196,8 @@ def halaman_koleksi(db, user_id: int, kind: str, file_types, db_key: bytes) -> d
         if fid in info:
             info[fid]["state"] = item["state"]
             info[fid]["collection_id"] = item["collection_id"]
+            if item["state"] == "locked":
+                info[fid]["locked"] = True
 
     session_id = session.get("session_id", "")
     koleksi_terbuka = {}
@@ -225,10 +227,14 @@ def halaman_koleksi(db, user_id: int, kind: str, file_types, db_key: bytes) -> d
             folder["cover"] = berkas["thumb_url"]
 
     unfiled = [info[fid] for fid in info if fid not in item_map]
+    # Item terkunci tetap tampil di asalnya (Tanpa folder atau isi foldernya),
+    # tetapi tidak diulang di bagian "Semua".
     semua = [
         info[fid] for fid in info
-        if fid not in item_map
-        or koleksi_terbuka.get(item_map[fid]["collection_id"], False)
+        if (fid not in item_map
+            or koleksi_terbuka.get(item_map[fid]["collection_id"], False))
+        and not info[fid]["locked"]
+        and info[fid]["state"] != "locked"
     ]
     return {
         "folders": folders,
