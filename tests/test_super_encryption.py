@@ -7,7 +7,7 @@ Round-trip tests for the 4-layer Super Encryption pipeline.
 import pytest
 
 from modules.cryptography.super_encryption import (
-    super_encrypt, super_decrypt, super_encrypt_steps,
+    super_encrypt, super_decrypt, super_encrypt_steps, super_decrypt_stages,
 )
 
 
@@ -167,3 +167,39 @@ class TestSuperEncryptionSteps:
         ct = super_encrypt("bandingkan", passphrase=PASSPHRASE)
         assert steps["final"].split(".")[0] == ct.split(".")[0]
         assert super_decrypt(steps["final"], passphrase=PASSPHRASE) == "bandingkan"
+
+
+class TestSuperDecryptionStages:
+    def test_stages_are_reversed_and_match_plaintext(self):
+        pesan = "Halo Jejak Super"
+        ct = super_encrypt(pesan, passphrase=PASSPHRASE)
+        detail = super_decrypt_stages(ct, passphrase=PASSPHRASE)
+        assert detail["final"] == pesan
+        assert [stage["kode"] for stage in detail["stages"]] == [
+            "blowfish", "chacha20", "playfair", "vigenere",
+        ]
+        for stage in detail["stages"]:
+            assert stage["jejak"]
+            assert len(stage["jejak"]) == stage["jejak_ditampilkan"]
+            assert stage["jejak_dipotong"] == (
+                stage["jejak_ditampilkan"] < stage["jejak_total"]
+            )
+        assert "".join(
+            baris["hasil"] for baris in detail["stages"][-1]["jejak"]
+        ) == pesan
+
+    def test_mac_is_checked_before_any_stage(self):
+        ct = super_encrypt("rahasia", passphrase="benar")
+        parts = ct.split(".")
+        parts[3] = ("A" if parts[3][0] != "A" else "B") + parts[3][1:]
+        tampered = ".".join(parts)
+        with pytest.raises(ValueError, match="MAC tidak cocok"):
+            super_decrypt_stages(tampered, passphrase="benar")
+        with pytest.raises(ValueError, match="MAC tidak cocok"):
+            super_decrypt(tampered, passphrase="benar")
+
+    def test_stages_keep_layer_keys_hidden(self):
+        ct = super_encrypt("Halo", passphrase=PASSPHRASE)
+        detail = super_decrypt_stages(ct, passphrase=PASSPHRASE)
+        assert PASSPHRASE not in repr(detail["stages"])
+        assert "***" in repr(detail["stages"][-1]["jejak"])

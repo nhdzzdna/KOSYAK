@@ -40,6 +40,7 @@ from Crypto.Util.Padding import pad as _pad
 from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
 from modules.cryptography.classical_cipher_2 import (
     playfair_encrypt, playfair_decrypt, playfair_encrypt_trace,
+    playfair_decrypt_trace,
 )
 from modules.cryptography.modern_cipher_1 import chacha20_encrypt, chacha20_decrypt
 from modules.cryptography.modern_cipher_2 import blowfish_encrypt, blowfish_decrypt
@@ -351,14 +352,13 @@ def super_encrypt(plaintext: str, master_key: bytes | None = None,
     )["final"]
 
 
-def super_decrypt(ciphertext: str, master_key: bytes | None = None,
-                  passphrase: str | None = None) -> str:
+def _decrypt_layers(ciphertext: str, master_key: bytes | None = None,
+                    passphrase: str | None = None) -> dict:
     """
-    Balikan pipeline setelah verifikasi MAC (encrypt-then-MAC).
+    Verifikasi MAC lalu jalankan kebalikan pipeline sekali saja.
 
-    Raises
-    ------
-    ValueError  Jika format salah, MAC gagal, atau kunci salah.
+    Dipakai bersama oleh :func:`super_decrypt` dan :func:`super_decrypt_stages`
+    agar jejak dihitung dari hasil dekripsi nyata dan galat tidak berubah.
     """
     parts = str(ciphertext).split(".")
     if len(parts) != 4 or parts[0] != _VERSION:
@@ -376,8 +376,167 @@ def super_decrypt(ciphertext: str, master_key: bytes | None = None,
     if not hmac.compare_digest(expected, mac_hex):
         raise ValueError("MAC tidak cocok: kunci salah atau data berubah.")
 
-    step = blowfish_decrypt(token, keys["blowfish"])
-    step = chacha20_decrypt(step, keys["chacha20"])
-    nibbles = playfair_decrypt(step, keys["playfair"]).replace("X", "")
+    blowfish_output = blowfish_decrypt(token, keys["blowfish"])
+    chacha_output = chacha20_decrypt(blowfish_output, keys["chacha20"])
+    playfair_output = playfair_decrypt(chacha_output, keys["playfair"])
+    nibbles = playfair_output.replace("X", "")
     vigenere_ct = _nibbles_to_bytes(nibbles).decode("utf-8")
-    return vigenere_decrypt(vigenere_ct, keys["vigenere"])
+    return {
+        "final": vigenere_decrypt(vigenere_ct, keys["vigenere"]),
+        "salt_hex": salt_hex,
+        "token": token,
+        "keys": keys,
+        "blowfish_output": blowfish_output,
+        "chacha_output": chacha_output,
+        "playfair_output": playfair_output,
+        "vigenere_ciphertext": vigenere_ct,
+    }
+
+
+def super_decrypt(ciphertext: str, master_key: bytes | None = None,
+                  passphrase: str | None = None) -> str:
+    """
+    Balikan pipeline setelah verifikasi MAC (encrypt-then-MAC).
+
+    Raises
+    ------
+    ValueError  Jika format salah, MAC gagal, atau kunci salah.
+    """
+    return _decrypt_layers(
+        ciphertext, master_key=master_key, passphrase=passphrase
+    )["final"]
+
+
+def super_decrypt_stages(ciphertext: str, master_key: bytes | None = None,
+                         passphrase: str | None = None) -> dict:
+    """
+    Dekripsi penuh dan kembalikan hasil serta jejak tiap layer terbalik.
+
+    MAC diverifikasi lebih dulu oleh :func:`_decrypt_layers`; bila gagal,
+    galat yang sama dengan :func:`super_decrypt` dilempar dan tidak ada jejak
+    yang dibuat. Kunci layer tetap disamarkan; nonce dan IV boleh ditampilkan.
+
+    Returns
+    -------
+    dict  ``{"final": str, "stages": list[dict]}`` dengan urutan layer
+          Blowfish, ChaCha20, Playfair, lalu Vigenere.
+    """
+    detail = _decrypt_layers(
+        ciphertext, master_key=master_key, passphrase=passphrase
+    )
+    token = detail["token"]
+    keys = detail["keys"]
+
+    blowfish_iv, blowfish_token = token.split(":", 1)
+    blowfish_jejak, blowfish_total = _byte_trace(
+        base64.b64decode(blowfish_token),
+        detail["blowfish_output"].encode("utf-8"),
+    )
+
+    chacha_nonce, chacha_token = detail["blowfish_output"].split(":", 1)
+    chacha_jejak, chacha_total = _byte_trace(
+        base64.b64decode(chacha_token),
+        detail["chacha_output"].encode("utf-8"),
+    )
+
+    playfair_jejak, playfair_total = playfair_decrypt_trace(
+        detail["chacha_output"], keys["playfair"],
+        limit=_PLAYFAIR_TRACE_LIMIT,
+    )
+    vigenere_jejak, vigenere_total = _vigenere_trace(
+        detail["vigenere_ciphertext"], detail["final"]
+    )
+
+    stages = [
+        {
+            "nama": "Layer 4 — Blowfish-CBC",
+            "kode": "blowfish",
+            "jenis": "modern",
+            "input": token,
+            "output": detail["blowfish_output"],
+            "keterangan": (
+                "Dekripsi blok CBC dengan padding PKCS#7. MAC HMAC-SHA256 "
+                "sudah diverifikasi sebelum dekripsi; jejak per byte "
+                "menampilkan ciphertext sebelum dan hasil dekripsi sesudah. "
+                "Byte padding dibuang setelah dekripsi. IV boleh ditampilkan; "
+                "kunci layer disembunyikan."
+            ),
+            "parameter": [
+                {"label": "IV", "nilai": blowfish_iv},
+                {"label": "Panjang IV", "nilai": "8 byte"},
+                {"label": "Mode", "nilai": "CBC"},
+                {"label": "Padding", "nilai": "PKCS#7"},
+                {"label": "Integritas", "nilai": "HMAC-SHA256 cocok"},
+            ],
+            "jejak": blowfish_jejak,
+            "jejak_total": blowfish_total,
+            "jejak_ditampilkan": len(blowfish_jejak),
+            "jejak_dipotong": len(blowfish_jejak) < blowfish_total,
+            "catatan": _catatan(blowfish_total, len(blowfish_jejak), "byte"),
+        },
+        {
+            "nama": "Layer 3 — ChaCha20",
+            "kode": "chacha20",
+            "jenis": "modern",
+            "input": detail["blowfish_output"],
+            "output": detail["chacha_output"],
+            "keterangan": (
+                "Cipher stream; jejak per byte menampilkan byte ciphertext "
+                "sebelum dan byte plaintext sesudah. Nonce boleh ditampilkan; "
+                "kunci layer disembunyikan."
+            ),
+            "parameter": [
+                {"label": "Nonce", "nilai": chacha_nonce},
+                {"label": "Panjang nonce", "nilai": "16 byte"},
+                {"label": "Mode", "nilai": "stream"},
+                {"label": "Padding", "nilai": "tidak ada"},
+            ],
+            "jejak": chacha_jejak,
+            "jejak_total": chacha_total,
+            "jejak_ditampilkan": len(chacha_jejak),
+            "jejak_dipotong": len(chacha_jejak) < chacha_total,
+            "catatan": _catatan(chacha_total, len(chacha_jejak), "byte"),
+        },
+        {
+            "nama": "Layer 2 — Playfair",
+            "kode": "playfair",
+            "jenis": "playfair",
+            "input": detail["chacha_output"],
+            "output": detail["playfair_output"],
+            "keterangan": (
+                "Pasangan huruf ciphertext dikembalikan menurut aturan baris "
+                "sama, kolom sama, atau persegi. Huruf J dibaca sebagai I; "
+                "huruf pengisi X dibuang setelah dekripsi. Kunci layer "
+                "disembunyikan."
+            ),
+            "parameter": [
+                {"label": "Persiapan teks", "nilai": "J dibaca sebagai I; karakter non-huruf dilewati."},
+                {"label": "Huruf pengisi", "nilai": "X pengisi dibuang setelah dekripsi."},
+            ],
+            "jejak": playfair_jejak,
+            "jejak_total": playfair_total,
+            "jejak_ditampilkan": len(playfair_jejak),
+            "jejak_dipotong": len(playfair_jejak) < playfair_total,
+            "catatan": _catatan(
+                playfair_total, len(playfair_jejak), "pasangan"
+            ),
+        },
+        {
+            "nama": "Layer 1 — Vigenere",
+            "kode": "vigenere",
+            "jenis": "vigenere",
+            "input": detail["vigenere_ciphertext"],
+            "output": detail["final"],
+            "keterangan": (
+                "Keluaran layer Playfair dipetakan kembali ke byte UTF-8 lalu "
+                "setiap karakter printable ASCII dikembalikan menurut kunci "
+                "layer. Kunci layer disembunyikan."
+            ),
+            "jejak": vigenere_jejak,
+            "jejak_total": vigenere_total,
+            "jejak_ditampilkan": len(vigenere_jejak),
+            "jejak_dipotong": len(vigenere_jejak) < vigenere_total,
+            "catatan": _catatan(vigenere_total, len(vigenere_jejak), ""),
+        },
+    ]
+    return {"final": detail["final"], "stages": stages}
