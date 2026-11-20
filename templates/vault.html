@@ -52,12 +52,15 @@
     </div>
   </div>
   <div class="kx-doc-row-actions collection-item-actions doc-file-actions">
+    {% set nama_berkas = f.original_name|lower %}
+    {% if not nama_berkas.endswith(('.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx')) %}
     <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm doc-action"
             data-reauth="doc.preview"
             data-reauth-resource="{{ f.id }}"
             title="{{ msg.preview }}">
       {{ ikon('eye', 15) }}<span>{{ msg.preview }}</span>
     </button>
+    {% endif %}
     <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <button type="submit" class="kx-btn kx-btn-secondary kx-btn-sm doc-action"
@@ -299,8 +302,7 @@
      role="dialog" aria-modal="true" aria-labelledby="preview-title"
      data-msg-text-label="{{ msg.preview_text_label }}"
      data-msg-unsupported="{{ msg.preview_unsupported }}"
-     data-msg-failed="{{ msg.preview_failed }}"
-     style="display:none;">
+     data-msg-failed="{{ msg.preview_failed }}">
   <div class="kx-modal preview-box" style="width:min(90vw, 860px); max-height:85vh; display:flex; flex-direction:column;">
     <div class="kx-modal-head viewer-bar">
       <h2 id="preview-title" class="kx-modal-title"></h2>
