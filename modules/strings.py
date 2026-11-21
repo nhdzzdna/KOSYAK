@@ -168,7 +168,6 @@ class MSG:
     NOTES_SAVED              = "Catatan berhasil disimpan."
     NOTES_UPDATED            = "Catatan berhasil diperbarui."
     NOTES_DELETED            = "Catatan berhasil dihapus."
-    NOTES_OPEN_HINT          = "Isi catatan hanya tampil setelah verifikasi ulang."
     NOTES_OPEN_LOADING       = "Membuka…"
     NOTES_OPEN_FAILED        = "Catatan gagal dibuka. Muat ulang halaman lalu coba kembali."
     NOTES_SEARCH_EMPTY       = "Tidak ada catatan yang cocok dengan pencarian."
@@ -203,24 +202,15 @@ class MSG:
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     CRYPTO_KEY_LABEL           = "Kunci enkripsi"
-    CRYPTO_KEY_HELP            = "Kunci untuk mengenkripsi dan mendekripsi pesan ini. Bukan kata sandi akun Anda."
     CRYPTO_SHOW_STAGES         = "Tampilkan tahapan"
     CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
-    CRYPTO_KEY_HINT = (
-        "Untuk cipher modern, teks diturunkan menjadi kunci 32 byte; "
-        "64 digit heksadesimal dipakai langsung."
-    )
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
     CRYPTO_PROCESSING          = "Memproses…"
     CRYPTO_COPY_DONE           = "Hasil tersalin ke clipboard."
     CRYPTO_COPY_FAILED         = "Gagal menyalin. Salin secara manual."
     CRYPTO_VIGENERE_KEY_HINT   = "Kunci hanya boleh huruf A-Z."
-    CRYPTO_SUPER_KEY_HINT      = (
-        "Kunci turunan untuk keempat layer diturunkan dengan "
-        "PBKDF2-HMAC-SHA256 bersalt dari kunci rahasia ini."
-    )
 
     # Judul, label kolom, dan keterangan tabel jejak Crypto Tools.
     CRYPTO_TAHAPAN_SUPER       = "Tahapan Super Encryption"
@@ -642,7 +632,7 @@ class MSG:
     # ── U2b: Dokumen ──────────────────────────────────────────────────────────
     DOC_CARD_UPLOAD_TITLE    = "Unggah Dokumen"
     DOC_DROPZONE_TITLE       = "Tarik dokumen ke sini atau klik untuk memilih"
-    DOC_DROPZONE_HINT        = "PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB · Berkas dienkripsi sebelum disimpan"
+    DOC_DROPZONE_HINT        = "PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB"
     DOC_CARD_ALL_TITLE       = "Semua Dokumen"
     DOC_CARD_UNFILED_TITLE   = "Tanpa Folder"
     DOC_SECTION_FOLDERS      = "Folder Dokumen"
@@ -666,7 +656,7 @@ class MSG:
     DOC_DELETE_CONFIRM_MSG   = "Dokumen {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
 
     # ── U2b: Audio ────────────────────────────────────────────────────────────
-    AUDIO_DROPZONE_HINT      = "MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB · Berkas dienkripsi sebelum disimpan"
+    AUDIO_DROPZONE_HINT      = "MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB"
     AUDIO_SEARCH_PLACEHOLDER = "Cari trek..."
     AUDIO_EMPTY_TRACKS       = "Belum ada trek audio"
     AUDIO_EMPTY_TRACKS_TEXT  = "Unggah audio untuk mulai memutar audio terenkripsi."
@@ -680,7 +670,7 @@ class MSG:
     MEDIA_TITLE              = "Media"
     MEDIA_UPLOAD_TITLE       = "Unggah Media"
     MEDIA_DROPZONE_TITLE     = "Tarik foto atau video ke sini"
-    MEDIA_DROPZONE_HINT      = "PNG, JPG, JPEG, GIF, BMP, WEBP, MP4, WEBM, AVI, MKV, MOV · Maks. 64 MB · Berkas dienkripsi sebelum disimpan"
+    MEDIA_DROPZONE_HINT      = "PNG, JPG, JPEG, GIF, BMP, WEBP, MP4, WEBM, AVI, MKV, MOV · Maks. 64 MB"
     MEDIA_CARD_ALL_TITLE     = "Semua Media"
     MEDIA_CARD_UNFILED_TITLE = "Tanpa Album"
     MEDIA_SECTION_ALBUMS     = "Album"
