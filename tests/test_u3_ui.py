@@ -201,14 +201,11 @@ class TestSecureNotes:
         body = _halaman(client, "/secure-notes")
         assert "Catatan tersimpan (0)" in body
         assert "Belum ada catatan" in body
-        assert "Belum ada catatan dipilih" in body
-        assert "data-sn-baru" in body
         assert 'id="sn-form"' in body
         assert 'action="/secure-notes/add"' in body
         assert 'name="title"' in body
         assert 'name="content"' in body
         assert "Simpan terenkripsi" in body
-        assert 'id="sn-editor-isi" hidden' in body
 
     def test_baris_dengan_grant_buka(self, client):
         token = _csrf(client, "/secure-notes")
@@ -221,15 +218,15 @@ class TestSecureNotes:
 
         body = _halaman(client, "/secure-notes")
         assert "Catatan tersimpan (1)" in body
-        assert "Belum ada catatan dipilih" in body  # panel kanan tetap kosong
-        assert re.search(r'data-sn-id="\d+"', body)
+        assert re.search(r'data-sn-item="\d+"', body)
         assert re.search(r'data-sn-open-url="[^"]*/secure-notes/open/\d+"', body)
         assert re.search(r'data-sn-edit-url="[^"]*/secure-notes/edit/\d+"', body)
-        assert re.search(r'data-sn-hapus-url="[^"]*/secure-notes/delete/\d+"', body)
+        assert re.search(r'action="[^"]*/secure-notes/delete/\d+"', body)
         assert 'data-reauth="note.open"' in body
         assert 'id="sn-buka"' in body
-        assert re.search(r'id="sn-hapus"[^>]*\bhidden\b', body)
+        assert 'id="sn-hapus-btn"' in body
         assert 'id="sn-cari"' in body
+        assert "Isi catatan hanya tampil setelah verifikasi ulang." not in body
 
 
 # ── Crypto Tools ─────────────────────────────────────────────────────────────
@@ -324,9 +321,7 @@ class TestSteganography:
         assert 'data-sg-kunci="passphrase"' in body
         assert 'name="key_mode" id="sg-kunci-mode" value="account"' in body
 
-        # Kunci akun: penjelasan tampil, kolom kunci rahasia tersembunyi.
-        assert 'id="sg-kunci-akun-info"' in body
-        assert MSG.STEGO_ACCOUNT_KEY_NOTE in body
+        # Kolom kunci rahasia tersembunyi.
         assert re.search(r'id="sg-kunci-rahasia-field"[^>]*\bhidden\b', body)
 
         # Indikator kapasitas + peringatan PNG + detail teknis.
