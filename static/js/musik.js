@@ -1,11 +1,10 @@
 /**
  * static/js/musik.js
  * ─────────────────
- * Pemutar audio kustom halaman Audio (U2b P5):
- * - Memutar audio HTML5 untuk trek terenkripsi (stream/view URL)
- * - Pemutar kustom di bagian bawah layar: cover placeholder, judul, format,
- *   prev/next, play toggle (lingkaran teal), waktu berjalan, progress bar teal, total durasi.
- * - Tombol play bulat di setiap baris tabel.
+ * Pemutar audio modal halaman Audio (U2g):
+ * - Memutar audio HTML5 untuk trek terenkripsi (stream/view URL) di modal KX.modal.
+ * - Tombol play bulat di setiap baris membuka modal dengan <audio controls> native.
+ * - Menutup modal menghentikan audio dan melepas sumbernya.
  * - Pencarian trek lokal di sisi klien (memfilter baris tabel).
  * - Checkbox pilih semua dan sinkronisasi dengan KX.aksiMengambang.
  * - Menu ⋯ per baris: Kunci/Lepas kunci, Buka di Winamp, Unduh, Hapus (ke Sampah via KX.konfirmasiHapus).
@@ -15,17 +14,8 @@
   'use strict';
 
   var audio = document.getElementById('music-audio');
-  var judulBawah = document.getElementById('music-now-playing');
-  var subBawah = document.getElementById('music-now-sub');
-  var tombolPutar = document.getElementById('music-play-toggle');
-  var tombolSebelum = document.getElementById('music-prev');
-  var tombolSesudah = document.getElementById('music-next');
-  var formWinamp = document.getElementById('music-winamp-form');
-  var tombolWinamp = document.getElementById('music-winamp');
-  var waktuKini = document.getElementById('music-time-cur');
-  var waktuTotal = document.getElementById('music-time-total');
-  var barKemajuan = document.getElementById('music-progress-bar');
-  var isiKemajuan = document.getElementById('music-progress-fill');
+  var modalAudio = document.getElementById('audio-modal');
+  var judulModal = document.getElementById('audio-modal-title');
   var kotakCari = document.getElementById('audio-search');
   var pilihSemua = document.getElementById('audio-select-all');
   var bilahPilih = document.getElementById('selection-bar');
@@ -37,16 +27,7 @@
     return;
   }
 
-  var daftar = [];
-  var indeks = -1;
   var trekAktif = null;
-
-  function formatWaktu(detik) {
-    if (isNaN(detik) || detik < 0) return '0:00';
-    var m = Math.floor(detik / 60);
-    var s = Math.floor(detik % 60);
-    return m + ':' + (s < 10 ? '0' : '') + s;
-  }
 
   function pesan(kunci) {
     var kotak = document.getElementById('collection-messages');
@@ -230,77 +211,6 @@
     }
   }
 
-  function teksPutar(aktif) {
-    if (!tombolPutar) {
-      return;
-    }
-    var ikonPlay = tombolPutar.querySelector('.audio-icon-play');
-    var ikonPause = tombolPutar.querySelector('.audio-icon-pause');
-    if (ikonPlay && ikonPause) {
-      ikonPlay.hidden = aktif;
-      ikonPause.hidden = !aktif;
-    }
-    tombolPutar.setAttribute('data-playing', aktif ? 'true' : 'false');
-  }
-
-  function siapkanWinamp(kartu) {
-    if (!formWinamp || !tombolWinamp) {
-      return;
-    }
-    if (!kartu) {
-      tombolWinamp.hidden = true;
-      tombolWinamp.setAttribute('data-reauth-resource', '');
-      return;
-    }
-    var id = kartu.getAttribute('data-file-id');
-    formWinamp.action = '/media-vault/play/' + id;
-    tombolWinamp.setAttribute('data-reauth-resource', id);
-    tombolWinamp.hidden = false;
-  }
-
-  function putarKartu(kartu) {
-    if (!kartu) {
-      return;
-    }
-    var wadah = kartu.closest('[data-track-list]') || kartu.closest('tbody');
-    daftar = wadah
-      ? Array.prototype.slice.call(wadah.querySelectorAll('[data-track]:not([hidden])'))
-      : [kartu];
-    indeks = daftar.indexOf(kartu);
-
-    if (trekAktif && trekAktif !== kartu) {
-      trekAktif.classList.remove('is-playing');
-    }
-    trekAktif = kartu;
-    kartu.classList.add('is-playing');
-
-    var url = kartu.getAttribute('data-view-url');
-    var nama = kartu.getAttribute('data-name') || pesan('no-track');
-
-    if (judulBawah) judulBawah.textContent = nama;
-    if (subBawah) subBawah.textContent = 'Audio';
-
-    siapkanWinamp(kartu);
-    if (!url) {
-      return;
-    }
-
-    audio.src = url;
-    audio.load();
-    var janji = audio.play();
-    if (janji && typeof janji.catch === 'function') {
-      janji.catch(function () {});
-    }
-  }
-
-  function geser(arah) {
-    if (!daftar.length) {
-      return;
-    }
-    indeks = (indeks + arah + daftar.length) % daftar.length;
-    putarKartu(daftar[indeks]);
-  }
-
   function bolehDiputar(kartu) {
     if (!kartu) {
       return false;
@@ -310,6 +220,63 @@
     }
     return Boolean(window.CryptixReauth &&
       window.CryptixReauth.grantFor('item.view', kartu.getAttribute('data-file-id')));
+  }
+
+  function hentikanAudio() {
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    if (trekAktif) {
+      trekAktif.classList.remove('is-playing');
+      trekAktif = null;
+    }
+    if (modalAudio) {
+      modalAudio.classList.remove('is-open');
+      modalAudio.setAttribute('aria-hidden', 'true');
+      modalAudio.hidden = true;
+    }
+  }
+
+  function putarKartu(kartu) {
+    if (!kartu) {
+      return;
+    }
+    if (trekAktif && trekAktif !== kartu) {
+      trekAktif.classList.remove('is-playing');
+    }
+    trekAktif = kartu;
+    kartu.classList.add('is-playing');
+
+    var url = kartu.getAttribute('data-view-url');
+    var nama = kartu.getAttribute('data-name') || 'Audio';
+
+    if (judulModal) {
+      judulModal.textContent = nama;
+    }
+
+    if (!url) {
+      return;
+    }
+
+    audio.src = url;
+    audio.load();
+
+    if (modalAudio) {
+      modalAudio.hidden = false;
+      if (window.KX && window.KX.modal && typeof window.KX.modal.buka === 'function') {
+        window.KX.modal.buka(modalAudio);
+      } else {
+        modalAudio.classList.add('is-open');
+        modalAudio.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    var janji = audio.play();
+    if (janji && typeof janji.catch === 'function') {
+      janji.catch(function () {});
+    }
   }
 
   // Klik putar pada tabel
@@ -329,6 +296,38 @@
       return;
     }
     putarKartu(kartu);
+  });
+
+  // Tutup modal audio
+  if (modalAudio) {
+    modalAudio.addEventListener('click', function (e) {
+      if (e.target.closest('[data-kx-tutup]') || e.target === modalAudio) {
+        hentikanAudio();
+      }
+    });
+
+    if (window.MutationObserver) {
+      var obs = new MutationObserver(function () {
+        if (!modalAudio.classList.contains('is-open') || modalAudio.getAttribute('aria-hidden') === 'true') {
+          if (audio.src) {
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            if (trekAktif) {
+              trekAktif.classList.remove('is-playing');
+              trekAktif = null;
+            }
+          }
+        }
+      });
+      obs.observe(modalAudio, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
+    }
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modalAudio && modalAudio.classList.contains('is-open')) {
+      hentikanAudio();
+    }
   });
 
   // Aksi Kunci / Lepas kunci per item dan massal
@@ -351,6 +350,7 @@
     }
     if (event.target === tombolLepasMassal) {
       aksiMassal('normal');
+      return;
     }
   });
 
@@ -359,57 +359,6 @@
       perbaruiPilihan();
     }
   });
-
-  // Kontrol tombol bar bawah
-  if (tombolPutar) {
-    tombolPutar.addEventListener('click', function () {
-      if (!audio.src) {
-        var pertama = document.querySelector('[data-track]:not([hidden])');
-        if (pertama) putarKartu(pertama);
-        return;
-      }
-      if (audio.paused) {
-        audio.play().catch(function () {});
-      } else {
-        audio.pause();
-      }
-    });
-  }
-
-  if (tombolSebelum) {
-    tombolSebelum.addEventListener('click', function () { geser(-1); });
-  }
-  if (tombolSesudah) {
-    tombolSesudah.addEventListener('click', function () { geser(1); });
-  }
-
-  // Waktu dan progress bar
-  audio.addEventListener('play', function () { teksPutar(true); });
-  audio.addEventListener('pause', function () { teksPutar(false); });
-  audio.addEventListener('ended', function () { geser(1); });
-  audio.addEventListener('error', function () {
-    if (audio.src) teksPutar(false);
-  });
-
-  audio.addEventListener('timeupdate', function () {
-    if (waktuKini) waktuKini.textContent = formatWaktu(audio.currentTime);
-    if (audio.duration && !isNaN(audio.duration)) {
-      if (waktuTotal) waktuTotal.textContent = formatWaktu(audio.duration);
-      if (isiKemajuan) {
-        var pct = (audio.currentTime / audio.duration) * 100;
-        isiKemajuan.style.width = pct + '%';
-      }
-    }
-  });
-
-  if (barKemajuan) {
-    barKemajuan.addEventListener('click', function (e) {
-      if (!audio.duration || isNaN(audio.duration)) return;
-      var rect = barKemajuan.getBoundingClientRect();
-      var rasio = (e.clientX - rect.left) / rect.width;
-      audio.currentTime = rasio * audio.duration;
-    });
-  }
 
   // ── Pencarian trek di sisi klien ─────────────────────────────────────────
   if (kotakCari) {
@@ -536,5 +485,4 @@
   }
 
   perbaruiPilihan();
-  teksPutar(false);
 })();

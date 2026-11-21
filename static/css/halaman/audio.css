@@ -8,8 +8,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--kx-space-3);
-  padding-bottom: 112px;
-  /* Memberikan ruang agar konten tidak tertutup pemutar tetap */
+  padding-bottom: var(--kx-space-4);
 }
 
 .kx-audio-layout {
@@ -45,17 +44,6 @@
   line-height: 1.4;
 }
 
-.kx-audio-winamp-badge {
-  display: flex;
-  align-items: center;
-  gap: var(--kx-space-2);
-  padding: 8px 12px;
-  background: var(--kx-surface-2);
-  border-radius: var(--kx-radius-input);
-  font-size: var(--kx-fs-caption);
-  color: var(--kx-text-2);
-}
-
 /* ── Toolbar Pencarian Trek ─────────────────────────────────────────────── */
 .kx-audio-toolbar {
   display: flex;
@@ -69,9 +57,56 @@
 }
 
 /* ── Tabel & Baris Trek Audio ───────────────────────────────────────────── */
+.kx-card-body > .kx-table-wrap {
+  overflow: visible;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-card);
+  background: var(--kx-surface);
+}
+
 .kx-audio-table {
   width: 100%;
   border-collapse: collapse;
+  display: block;
+}
+
+.kx-audio-table thead,
+.kx-audio-table tbody {
+  display: block;
+  width: 100%;
+}
+
+.kx-audio-table thead tr,
+.kx-audio-tr {
+  display: grid;
+  grid-template-columns: 40px 44px minmax(0, 1fr) 80px 110px 44px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.kx-audio-table th {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--kx-border);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.kx-audio-table td {
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--kx-border-soft);
+  color: var(--kx-text);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.kx-audio-tr:last-child td {
+  border-bottom: 0;
 }
 
 .kx-audio-tr {
@@ -83,25 +118,35 @@
 }
 
 .kx-audio-tr.is-playing {
-  background: var(--kx-accent-soft, rgba(20, 184, 166, 0.12));
+  background: var(--kx-accent-soft);
 }
 
 .kx-audio-tr.is-selected {
-  background: var(--kx-accent-soft, rgba(20, 184, 166, 0.08));
+  background: var(--kx-accent-soft);
 }
 
-.kx-audio-cell-play {
-  width: 44px;
+.kx-audio-cell-play,
+.kx-audio-th-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.kx-audio-cell-select {
-  width: 36px;
+.kx-audio-cell-select,
+.kx-audio-th-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.kx-audio-table .kx-cell-actions {
-  width: 44px;
+.kx-audio-table .kx-cell-actions,
+.kx-audio-th-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .kx-audio-play-circle {
@@ -132,7 +177,8 @@
 }
 
 .kx-audio-cell-title {
-  min-width: 180px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .kx-audio-track-title {
@@ -140,12 +186,19 @@
   font-weight: 500;
   color: var(--kx-text);
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kx-audio-track-meta {
+  display: block;
   font-size: var(--kx-fs-caption);
   color: var(--kx-text-2);
   font-family: var(--kx-font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kx-audio-cell-mono {
@@ -159,10 +212,6 @@
 .kx-audio-menu-wrap {
   position: relative;
   display: inline-block;
-}
-
-.kx-card-body>.kx-table-wrap {
-  overflow: visible;
 }
 
 .kx-audio-menu-dropdown {
@@ -211,168 +260,52 @@
   color: var(--kx-danger);
 }
 
-/* ── Pemutar Kustom Tetap (Bottom Bar) ──────────────────────────────────── */
-.kx-audio-player-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: var(--kx-surface);
-  border-top: 1px solid var(--kx-border);
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
-  padding: 10px var(--kx-space-4);
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 200px;
-  align-items: center;
-  gap: var(--kx-space-3);
+/* ── Modal Audio Bawaan Browser ─────────────────────────────────────────── */
+.kx-audio-modal {
+  width: min(90vw, 480px);
 }
 
-.kx-audio-player-track {
-  display: flex;
-  align-items: center;
-  gap: var(--kx-space-3);
-  min-width: 0;
-}
-
-.kx-audio-player-cover {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--kx-radius-input);
-  background: var(--kx-surface-2);
-  color: var(--kx-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.kx-audio-player-meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.kx-audio-player-title {
-  display: block;
-  font-weight: 600;
-  font-size: var(--kx-fs-body);
-  color: var(--kx-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kx-audio-player-sub {
-  display: block;
-  font-size: var(--kx-fs-caption);
-  color: var(--kx-text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kx-audio-player-center {
+.kx-audio-modal-body {
+  padding: var(--kx-space-4);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  gap: var(--kx-space-3);
 }
 
-.kx-audio-player-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--kx-space-2);
-}
-
-.kx-audio-btn-play-main {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--kx-accent);
-  color: #fff;
-  border: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.15s, background 0.15s;
-}
-
-.kx-audio-btn-play-main:hover,
-.kx-audio-btn-play-main:focus-visible {
-  transform: scale(1.08);
-  outline: none;
-}
-
-.kx-audio-player-progress-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--kx-space-2);
+.kx-audio-player-native {
   width: 100%;
-  max-width: 520px;
+  border-radius: var(--kx-radius-input);
 }
 
-.kx-audio-time {
-  font-family: var(--kx-font-mono);
-  font-size: var(--kx-fs-caption);
-  color: var(--kx-text-2);
-  min-width: 38px;
-}
-
-.kx-audio-progress-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--kx-surface-2);
-  border-radius: 3px;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-}
-
-.kx-audio-progress-fill {
-  height: 100%;
-  width: 0%;
-  background: var(--kx-accent);
-  transition: width 0.1s linear;
-}
-
-.kx-audio-player-right {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--kx-space-2);
-}
-
-/* ── Responsif ───────────────────────────────────────────────────────────── */
+/* ── Responsif: Tiga lebar breakpoint ────────────────────────────────────── */
 @media (max-width: 900px) {
   .kx-audio-layout {
     grid-template-columns: 1fr;
   }
 
-  .kx-audio-player-bar {
-    grid-template-columns: 1fr auto;
-  }
-
-  .kx-audio-player-progress-wrap {
-    display: none;
+  .kx-audio-table thead tr,
+  .kx-audio-tr {
+    grid-template-columns: 36px 40px minmax(0, 1fr) 70px 100px 40px;
   }
 }
 
 @media (max-width: 640px) {
-  .kx-audio-player-right {
-    display: none;
+  .kx-audio-table thead tr,
+  .kx-audio-tr {
+    grid-template-columns: 36px 36px minmax(0, 1fr) 36px;
   }
 
-  .kx-audio-player-bar {
-    grid-template-columns: 1fr auto;
+  .kx-audio-cell-durasi,
+  .kx-audio-th-durasi,
+  .kx-audio-cell-status,
+  .kx-audio-th-status {
+    display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .kx-audio-tr,
-  .kx-audio-play-circle,
-  .kx-audio-btn-play-main {
+  .kx-audio-play-circle {
     transition: none;
   }
 }

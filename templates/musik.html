@@ -15,7 +15,7 @@
     data-view-url="{{ f.view_url }}"
     data-locked="{{ 1 if f.state == 'locked' else 0 }}"
     data-collection-id="{{ f.collection_id or '' }}">
-  <td class="kx-cell-select">
+  <td class="kx-cell-select kx-audio-cell-select">
     <label class="media-select" title="{{ msg.pick }}">
       <input type="checkbox" class="kx-checkbox" data-select-file data-kx-pilih value="{{ f.id }}" />
     </label>
@@ -33,17 +33,17 @@
     <span class="kx-audio-track-title music-track-name" title="{{ f.original_name }}">{{ f.original_name }}</span>
     <span class="kx-audio-track-meta audio-track-meta">{{ f.extension|upper }}</span>
   </td>
-  <td class="kx-audio-cell-mono">
+  <td class="kx-audio-cell-mono kx-audio-cell-durasi">
     <span>-</span>
   </td>
-  <td>
+  <td class="kx-audio-cell-status">
     {% if f.state == 'locked' %}
       <span class="kx-badge kx-badge-warn item-lock-note">Terkunci</span>
     {% else %}
       <span class="kx-badge kx-badge-ok">Terenkripsi</span>
     {% endif %}
   </td>
-  <td class="kx-cell-actions">
+  <td class="kx-cell-actions kx-audio-cell-actions">
     <div class="kx-audio-menu-wrap">
       <button type="button" class="kx-btn kx-btn-icon kx-btn-sm" data-menu-toggle aria-label="Aksi trek">
         {{ ikon('more-horizontal', 16) }}
@@ -115,19 +115,12 @@
               <p class="kx-dropzone-title">Tarik berkas audio ke sini</p>
               <p class="kx-audio-hint">atau klik untuk memilih berkas</p>
             </div>
-            <p class="kx-audio-hint">MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB · Berkas dienkripsi sebelum disimpan</p>
+            <p class="kx-audio-hint">MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB</p>
             <button type="submit" class="kx-btn kx-btn-primary kx-btn-full">
               {{ ikon('lock', 16) }}
               <span>Enkripsi &amp; Unggah</span>
             </button>
           </form>
-
-          {% if winamp_available %}
-          <div class="kx-audio-winamp-badge mt-3">
-            <span aria-hidden="true">{{ ikon('link', 16) }}</span>
-            <span>Winamp terdeteksi di sistem</span>
-          </div>
-          {% endif %}
         </div>
       </section>
     </aside>
@@ -152,14 +145,14 @@
             <table class="kx-audio-table kx-table">
               <thead>
                 <tr>
-                  <th style="width:36px;">
+                  <th class="kx-audio-th-select">
                     <input type="checkbox" id="audio-select-all" class="kx-checkbox" title="Pilih semua trek" />
                   </th>
-                  <th style="width:44px;"></th>
-                  <th>Judul</th>
-                  <th>Durasi</th>
-                  <th>Status</th>
-                  <th style="width:44px;"></th>
+                  <th class="kx-audio-th-play"></th>
+                  <th class="kx-audio-th-title">Judul</th>
+                  <th class="kx-audio-th-durasi">Durasi</th>
+                  <th class="kx-audio-th-status">Status</th>
+                  <th class="kx-audio-th-actions"></th>
                 </tr>
               </thead>
               <tbody id="all-items" data-track-list>
@@ -195,54 +188,18 @@
   </div>
 </div>
 
-<!-- ── Pemutar HTML5 Kustom Tetap (Bottom Bar) ── -->
-<div class="kx-audio-player-bar">
-  <!-- Elemen audio native tetap ada untuk decoding & streaming -->
-  <audio id="music-audio" preload="none" hidden></audio>
-
-  <div class="kx-audio-player-track">
-    <div class="kx-audio-player-cover" aria-hidden="true">
-      {{ ikon('headphones', 22) }}
-    </div>
-    <div class="kx-audio-player-meta">
-      <span id="music-now-playing" class="kx-audio-player-title music-now-playing">{{ msg.no_track }}</span>
-      <span id="music-now-sub" class="kx-audio-player-sub">Audio</span>
-    </div>
-  </div>
-
-  <div class="kx-audio-player-center">
-    <div class="kx-audio-player-controls audio-controls">
-      <button type="button" id="music-prev" class="kx-btn kx-btn-icon kx-btn-sm" title="{{ msg.prev }}">
-        {{ ikon('skip-back', 18) }}
-      </button>
-      <button type="button" id="music-play-toggle" class="kx-audio-btn-play-main audio-play-toggle" data-playing="false" title="{{ msg.play }}">
-        <span class="audio-icon-play" aria-hidden="true">{{ ikon('play', 18) }}</span>
-        <span class="audio-icon-pause" aria-hidden="true" hidden>{{ ikon('pause', 18) }}</span>
-      </button>
-      <button type="button" id="music-next" class="kx-btn kx-btn-icon kx-btn-sm" title="{{ msg.next }}">
-        {{ ikon('skip-forward', 18) }}
+<!-- ── Modal Pemutar Audio Bawaan Browser ── -->
+<div id="audio-modal" class="kx-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="audio-modal-title" hidden>
+  <div class="kx-modal kx-audio-modal">
+    <div class="kx-modal-head">
+      <h2 id="audio-modal-title" class="kx-modal-title">Audio</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">
+        {{ ikon('x', 18) }}
       </button>
     </div>
-    <div class="kx-audio-player-progress-wrap">
-      <span id="music-time-cur" class="kx-audio-time">0:00</span>
-      <div id="music-progress-bar" class="kx-audio-progress-bar" role="slider" aria-label="Posisi pemutaran" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-        <div id="music-progress-fill" class="kx-audio-progress-fill"></div>
-      </div>
-      <span id="music-time-total" class="kx-audio-time">0:00</span>
+    <div class="kx-modal-body kx-audio-modal-body">
+      <audio id="music-audio" controls preload="none" class="kx-audio-player-native"></audio>
     </div>
-  </div>
-
-  <div class="kx-audio-player-right">
-    {% if winamp_available %}
-    <form id="music-winamp-form" method="POST" action="{{ url_for('media.play', file_id=0) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <input type="hidden" name="player" value="winamp" />
-      <button type="submit" id="music-winamp" class="kx-btn kx-btn-secondary kx-btn-sm"
-              data-reauth="media.winamp" data-reauth-resource="" hidden title="Buka trek di Winamp">
-        {{ ikon('link', 14) }}<span>Winamp</span>
-      </button>
-    </form>
-    {% endif %}
   </div>
 </div>
 {% endblock %}
