@@ -146,3 +146,4 @@ Sesuai Aturan 6, seluruh penyesuaian tes dicatat secara eksplisit:
 | `ed005f7` | `[U2g] catatan` | Daftar catatan ringkas satu baris (Buka & Hapus 8px), hapus kotak biru, detail inline, form samping |
 | `db2ec69` | `[U2g] teks antarmuka` | Sapuan gaya teks lugas di 12 berkas template dan strings.py sesuai aturan |
 | (commit penutup) | `[U2g] tes dan dokumen g1` | Pembaruan tes yang disesuaikan, tes kontrak baru test_u2g_kontrak.py, dokumen U2g.md |
+
