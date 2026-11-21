@@ -271,7 +271,8 @@ class TestFolderTerkunci:
         reauth.clear()
 
         body = client.get("/audio").get_data(as_text=True)
-        assert "Rahasia" in body
+        # Halaman Audio kini berupa daftar satu tingkat tanpa panel folder,
+        # tetapi isi koleksi terkunci tetap tidak dimuat tanpa grant.
         assert "rahasia.mp3" not in body
         assert f"/media-vault/view/{fid}" not in body
 
@@ -392,31 +393,35 @@ class TestDatabaseLama:
         assert jumlah == 0
 
 class TestDaftarSemuaDanFolderTerbuka:
-    def test_item_terkunci_tidak_di_semua_tetapi_di_tanpa_folder(self, client):
+    def test_item_terkunci_tetap_tampil_di_semua_audio(self, client):
         fid = _buat_berkas(1, "kunci-luar.mp3", ISI_AUDIO)
         with get_db() as db:
             db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid,))
             db.commit()
 
         body = client.get("/audio").get_data(as_text=True)
-        semua = body.split('id="collection-all-section"', 1)[1].split(
-            'id="collection-unfiled-section"', 1)[0]
-        unfiled = body.split('id="collection-unfiled-section"', 1)[1]
+        semua = body.split('id="collection-all-section"', 1)[1]
 
-        assert "kunci-luar.mp3" not in semua
-        assert "kunci-luar.mp3" in unfiled
-        assert "Terkunci" in unfiled
+        assert "kunci-luar.mp3" in semua
+        assert "Terkunci" in semua
+        assert 'id="collection-unfiled-section"' not in body
 
     def test_bagian_semua_disembunyikan_saat_folder_dibuka(self):
-        for nama in ("vault.html", "musik.html", "media_vault.html"):
+        with open("templates/vault.html", "r", encoding="utf-8") as f:
+            vault = f.read()
+        assert 'id="collection-all-section"' in vault
+        assert 'id="collection-unfiled-section"' in vault
+
+        with open("static/js/collection_folders.js", "r", encoding="utf-8") as f:
+            js = f.read()
+        assert "collection-all-section" in js
+        assert "collection-unfiled-section" in js
+        assert "hidden" in js
+
+        # Media dan Audio menjadi daftar satu tingkat: tidak ada bagian
+        # Tanpa album/folder yang terpisah.
+        for nama in ("musik.html", "media_vault.html"):
             with open(f"templates/{nama}", "r", encoding="utf-8") as f:
                 isi = f.read()
             assert 'id="collection-all-section"' in isi
-            assert 'id="collection-unfiled-section"' in isi
-
-        for nama in ("collection_folders.js", "media_albums.js"):
-            with open(f"static/js/{nama}", "r", encoding="utf-8") as f:
-                js = f.read()
-            assert "collection-all-section" in js
-            assert "collection-unfiled-section" in js
-            assert "hidden" in js
+            assert 'id="collection-unfiled-section"' not in isi

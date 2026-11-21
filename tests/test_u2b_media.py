@@ -177,15 +177,16 @@ def test_halaman_media_status_terkunci(client):
     assert "Terkunci" in html
 
 
-def test_halaman_media_badge_album_di_semua(client):
+def test_halaman_media_item_album_tidak_tampil_di_semua(client):
     _unggah_media_db("foto_album_terbuka.png", album=True)
     resp = client.get("/media-vault")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
 
-    assert "foto_album_terbuka.png" in html
-    assert "kx-media-folder-badge" in html
+    # Album tetap terdaftar, tetapi isinya tidak lagi tampil di bagian Semua.
     assert "Album Dokumentasi" in html
+    assert "foto_album_terbuka.png" not in html
+    assert 'id="collection-unfiled-section"' not in html
 
 
 def test_halaman_media_album_terkunci_tidak_tampil_di_semua(client):
