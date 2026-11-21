@@ -11,7 +11,7 @@
      data-msg-processing="{{ MSG.CRYPTO_PROCESSING }}"
      data-msg-copy-done="{{ MSG.CRYPTO_COPY_DONE }}"
      data-msg-copy-failed="{{ MSG.CRYPTO_COPY_FAILED }}">
-  <form method="POST" class="kx-ct-form" id="crypto-form">
+  <form method="POST" class="kx-ct-form" id="crypto-form" autocomplete="off">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="cipher" id="ct-cipher" value="super" />
     <input type="hidden" name="action" id="ct-aksi" value="encrypt" />
@@ -88,20 +88,32 @@
           </div>
 
           <div class="kx-field" id="ct-kunci-field" hidden>
-            <label class="kx-label" for="ct-kunci">Kunci</label>
+            <label class="kx-label" for="ct-kunci">{{ MSG.CRYPTO_KEY_LABEL }}</label>
             <input type="text" class="kx-input kx-ct-kunci" id="ct-kunci" name="key"
-                   autocomplete="off" placeholder="Kunci teks atau 64 digit heksadesimal" />
+                   autocomplete="new-password" readonly
+                   data-lpignore="true" data-1p-ignore="true" data-form-type="other"
+                   placeholder="Kunci teks atau 64 digit heksadesimal" />
+            <p class="kx-ct-hint">{{ MSG.CRYPTO_KEY_HELP }}</p>
             <p class="kx-ct-hint" data-hint-kunci hidden>{{ MSG.CRYPTO_KEY_HINT }}</p>
             <p class="kx-ct-hint" data-hint-vigenere hidden>{{ MSG.CRYPTO_VIGENERE_KEY_HINT }}</p>
           </div>
 
           <div class="kx-field" id="ct-passphrase-field" hidden>
-            <label class="kx-label" for="ct-passphrase">Kunci rahasia</label>
+            <label class="kx-label" for="ct-passphrase">{{ MSG.CRYPTO_KEY_LABEL }}</label>
             <div class="kx-sandi" data-kx-sandi>
               <input type="password" class="kx-input" id="ct-passphrase" name="passphrase"
-                     autocomplete="off" />
+                     autocomplete="new-password" readonly
+                     data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
             </div>
+            <p class="kx-ct-hint">{{ MSG.CRYPTO_KEY_HELP }}</p>
             <p class="kx-ct-hint" data-hint-passphrase>{{ MSG.CRYPTO_SUPER_KEY_HINT }}</p>
+          </div>
+
+          <div class="kx-field kx-ct-stages-field">
+            <label class="kx-checkbox kx-ct-stages-label">
+              <input type="checkbox" name="show_stages" id="ct-show-stages" value="1" {% if show_stages %}checked{% endif %} />
+              <span>{{ MSG.CRYPTO_SHOW_STAGES }}</span>
+            </label>
           </div>
 
           <button type="submit" class="kx-btn kx-btn-primary kx-ct-proses" id="ct-proses">

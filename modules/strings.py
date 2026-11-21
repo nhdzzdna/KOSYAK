@@ -202,6 +202,9 @@ class MSG:
     STEGO_PNG_WARNING        = "Gambar hasil disimpan sebagai PNG; menyimpan ulang sebagai JPEG akan merusak muatan."
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    CRYPTO_KEY_LABEL           = "Kunci enkripsi"
+    CRYPTO_KEY_HELP            = "Kunci untuk mengenkripsi dan mendekripsi pesan ini. Bukan kata sandi akun Anda."
+    CRYPTO_SHOW_STAGES         = "Tampilkan tahapan"
     CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_KEY_HINT = (

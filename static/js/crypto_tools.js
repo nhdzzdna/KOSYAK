@@ -22,6 +22,7 @@
   var fieldKunci = document.getElementById('ct-kunci-field');
   var fieldPassphrase = document.getElementById('ct-passphrase-field');
   var inputKunci = document.getElementById('ct-kunci');
+  var inputPassphrase = document.getElementById('ct-passphrase');
   var hintKunci = document.querySelector('[data-hint-kunci]');
   var hintVigenere = document.querySelector('[data-hint-vigenere]');
   var tombolProses = document.getElementById('ct-proses');
@@ -135,9 +136,30 @@
     }
   });
 
+  function lepasReadonly(event) {
+    if (event.target && event.target.hasAttribute('readonly')) {
+      event.target.removeAttribute('readonly');
+    }
+  }
+
   if (inputKunci) {
+    inputKunci.addEventListener('focus', lepasReadonly);
     inputKunci.addEventListener('input', filterVigenereKey);
   }
+
+  if (inputPassphrase) {
+    inputPassphrase.addEventListener('focus', lepasReadonly);
+  }
+
+  // Cegah autofill kata sandi akun oleh peramban sebelum kolom difokuskan
+  window.addEventListener('load', function () {
+    if (inputPassphrase && inputPassphrase.hasAttribute('readonly')) {
+      inputPassphrase.value = '';
+    }
+    if (inputKunci && inputKunci.hasAttribute('readonly')) {
+      inputKunci.value = '';
+    }
+  });
 
   if (form) {
     form.addEventListener('submit', function () {
