@@ -185,3 +185,81 @@ def vigenere_letter_trace(text: str, key: str, decrypt: bool = False,
         index += 1
 
     return result, len(text)
+
+
+def vigenere_encrypt_stages(plaintext: str, key: str, limit: int = 200) -> dict:
+    """
+    Enkripsi Vigenere klasik sekaligus mengembalikan tahapan jejak.
+
+    Returns
+    -------
+    dict: {"final": str, "stages": list[dict]}
+    """
+    if not is_valid_vigenere_key(key):
+        raise ValueError("Vigenere key must contain letters A-Z only.")
+    final = vigenere_letter_encrypt(plaintext, key)
+    jejak, total = vigenere_letter_trace(plaintext, key, decrypt=False, limit=limit)
+    catatan = (
+        f"ditampilkan {len(jejak)} pertama dari {total} karakter"
+        if len(jejak) < total else ""
+    )
+    stage = {
+        "nama": "Vigenere",
+        "kode": "vigenere",
+        "jenis": "vigenere",
+        "input": plaintext,
+        "output": final,
+        "keterangan": (
+            "Setiap huruf digeser menurut huruf kunci yang diketik. Huruf besar/kecil "
+            "dipertahankan; karakter bukan huruf dilewati tanpa memajukan indeks kunci."
+        ),
+        "parameter": [
+            {"label": "Panjang kunci", "nilai": f"{len(key)} huruf"},
+            {"label": "Pengulangan", "nilai": f"Kunci berulang setiap {len(key)} huruf"},
+        ],
+        "jejak": jejak,
+        "jejak_total": total,
+        "jejak_ditampilkan": len(jejak),
+        "jejak_dipotong": len(jejak) < total,
+        "catatan": catatan,
+    }
+    return {"final": final, "stages": [stage]}
+
+
+def vigenere_decrypt_stages(ciphertext: str, key: str, limit: int = 200) -> dict:
+    """
+    Dekripsi Vigenere klasik sekaligus mengembalikan tahapan jejak kebalikannya.
+
+    Returns
+    -------
+    dict: {"final": str, "stages": list[dict]}
+    """
+    if not is_valid_vigenere_key(key):
+        raise ValueError("Vigenere key must contain letters A-Z only.")
+    final = vigenere_letter_decrypt(ciphertext, key)
+    jejak, total = vigenere_letter_trace(ciphertext, key, decrypt=True, limit=limit)
+    catatan = (
+        f"ditampilkan {len(jejak)} pertama dari {total} karakter"
+        if len(jejak) < total else ""
+    )
+    stage = {
+        "nama": "Vigenere",
+        "kode": "vigenere",
+        "jenis": "vigenere",
+        "input": ciphertext,
+        "output": final,
+        "keterangan": (
+            "Setiap huruf ciphertext dikembalikan menurut huruf kunci yang diketik. "
+            "Karakter bukan huruf dilewati tanpa memajukan indeks kunci."
+        ),
+        "parameter": [
+            {"label": "Panjang kunci", "nilai": f"{len(key)} huruf"},
+            {"label": "Pengulangan", "nilai": f"Kunci berulang setiap {len(key)} huruf"},
+        ],
+        "jejak": jejak,
+        "jejak_total": total,
+        "jejak_ditampilkan": len(jejak),
+        "jejak_dipotong": len(jejak) < total,
+        "catatan": catatan,
+    }
+    return {"final": final, "stages": [stage]}

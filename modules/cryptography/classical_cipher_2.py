@@ -253,3 +253,83 @@ def playfair_decrypt_trace(ciphertext: str, key: str,
         })
 
     return jejak, total
+
+
+def playfair_encrypt_stages(plaintext: str, key: str, limit: int = 100) -> dict:
+    """
+    Enkripsi Playfair sekaligus mengembalikan tahapan jejak.
+
+    Returns
+    -------
+    dict: {"final": str, "stages": list[dict]}
+    """
+    table = _build_table(key)
+    final = playfair_encrypt(plaintext, key)
+    jejak, total = playfair_encrypt_trace(plaintext, key, limit=limit)
+    catatan = (
+        f"ditampilkan {len(jejak)} pasangan pertama dari {total} pasangan"
+        if len(jejak) < total else ""
+    )
+    grid_str = " | ".join("".join(row) for row in table)
+    stage = {
+        "nama": "Playfair",
+        "kode": "playfair",
+        "jenis": "playfair",
+        "input": plaintext,
+        "output": final,
+        "keterangan": (
+            "Pasangan huruf diubah menurut aturan baris sama, kolom sama, atau persegi. "
+            "Huruf J dibaca sebagai I; huruf pengisi X disisipkan pada huruf kembar atau ganjil."
+        ),
+        "parameter": [
+            {"label": "Matriks 5×5", "nilai": grid_str},
+            {"label": "Persiapan teks", "nilai": "J dibaca sebagai I; karakter non-huruf dilewati."},
+            {"label": "Huruf pengisi", "nilai": "X disisipkan pada huruf kembar atau ganjil."},
+        ],
+        "jejak": jejak,
+        "jejak_total": total,
+        "jejak_ditampilkan": len(jejak),
+        "jejak_dipotong": len(jejak) < total,
+        "catatan": catatan,
+    }
+    return {"final": final, "stages": [stage]}
+
+
+def playfair_decrypt_stages(ciphertext: str, key: str, limit: int = 100) -> dict:
+    """
+    Dekripsi Playfair sekaligus mengembalikan tahapan jejak kebalikannya.
+
+    Returns
+    -------
+    dict: {"final": str, "stages": list[dict]}
+    """
+    table = _build_table(key)
+    final = playfair_decrypt(ciphertext, key)
+    jejak, total = playfair_decrypt_trace(ciphertext, key, limit=limit)
+    catatan = (
+        f"ditampilkan {len(jejak)} pasangan pertama dari {total} pasangan"
+        if len(jejak) < total else ""
+    )
+    grid_str = " | ".join("".join(row) for row in table)
+    stage = {
+        "nama": "Playfair",
+        "kode": "playfair",
+        "jenis": "playfair",
+        "input": ciphertext,
+        "output": final,
+        "keterangan": (
+            "Pasangan huruf ciphertext dikembalikan menurut aturan baris sama, kolom sama, "
+            "atau persegi. Huruf J dibaca sebagai I; huruf pengisi X hasil enkripsi dibuang."
+        ),
+        "parameter": [
+            {"label": "Matriks 5×5", "nilai": grid_str},
+            {"label": "Persiapan teks", "nilai": "J dibaca sebagai I; karakter non-huruf dilewati."},
+            {"label": "Huruf pengisi", "nilai": "X pengisi dibuang setelah dekripsi."},
+        ],
+        "jejak": jejak,
+        "jejak_total": total,
+        "jejak_ditampilkan": len(jejak),
+        "jejak_dipotong": len(jejak) < total,
+        "catatan": catatan,
+    }
+    return {"final": final, "stages": [stage]}

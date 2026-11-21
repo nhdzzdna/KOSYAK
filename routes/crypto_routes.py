@@ -17,15 +17,22 @@ from routes.auth_routes import login_required
 from modules.strings import MSG
 from modules.cryptography.classical_cipher_1 import (
     is_valid_vigenere_key, vigenere_letter_encrypt, vigenere_letter_decrypt,
-    vigenere_letter_trace,
+    vigenere_letter_trace, vigenere_encrypt_stages, vigenere_decrypt_stages,
 )
 from modules.cryptography.classical_cipher_2 import (
     playfair_encrypt, playfair_decrypt, playfair_encrypt_trace,
-    playfair_decrypt_trace,
+    playfair_decrypt_trace, playfair_encrypt_stages, playfair_decrypt_stages,
 )
-from modules.cryptography.modern_cipher_1    import chacha20_encrypt, chacha20_decrypt
-from modules.cryptography.modern_cipher_2    import blowfish_encrypt, blowfish_decrypt
+from modules.cryptography.modern_cipher_1    import (
+    chacha20_encrypt, chacha20_decrypt,
+    chacha20_encrypt_stages, chacha20_decrypt_stages,
+)
+from modules.cryptography.modern_cipher_2    import (
+    blowfish_encrypt, blowfish_decrypt,
+    blowfish_encrypt_stages, blowfish_decrypt_stages,
+)
 from modules.cryptography.super_encryption   import (
+    super_encrypt, super_decrypt,
     super_encrypt_stages, super_decrypt_stages,
     _byte_trace, _catatan, _TRACE_LIMIT, _PLAYFAIR_TRACE_LIMIT,
     _MODERN_TRACE_LIMIT,
@@ -227,15 +234,17 @@ def index():
     result = None
     error  = None
     stages = None
+    show_stages = False
     status = 200
 
     if request.method == "POST":
-        action     = request.form.get("action", "encrypt")   # encrypt / decrypt
-        cipher     = request.form.get("cipher", "super")
-        text       = request.form.get("text",       "")
-        key        = request.form.get("key",        "")
-        passphrase = request.form.get("passphrase", "")
-        enkripsi   = action == "encrypt"
+        action      = request.form.get("action", "encrypt")   # encrypt / decrypt
+        cipher      = request.form.get("cipher", "super")
+        text        = request.form.get("text",       "")
+        key         = request.form.get("key",        "")
+        passphrase  = request.form.get("passphrase", "")
+        show_stages = bool(request.form.get("show_stages") or request.form.get("show_steps"))
+        enkripsi    = action == "encrypt"
 
         try:
             if cipher == "vigenere":
@@ -245,44 +254,85 @@ def index():
                     if _wants_json():
                         return jsonify({"error": error}), status
                 else:
-                    result = (
-                        vigenere_letter_encrypt(text, key) if enkripsi
-                        else vigenere_letter_decrypt(text, key)
-                    )
-                    stages = [_stage_vigenere(text, result, key, enkripsi)]
+                    if show_stages:
+                        detail = (
+                            vigenere_encrypt_stages(text, key) if enkripsi
+                            else vigenere_decrypt_stages(text, key)
+                        )
+                        result = detail["final"]
+                        stages = detail["stages"]
+                    else:
+                        result = (
+                            vigenere_letter_encrypt(text, key) if enkripsi
+                            else vigenere_letter_decrypt(text, key)
+                        )
 
             elif cipher == "playfair":
-                result = (
-                    playfair_encrypt(text, key) if enkripsi
-                    else playfair_decrypt(text, key)
-                )
-                stages = [_stage_playfair(text, result, key, enkripsi)]
+                if show_stages:
+                    detail = (
+                        playfair_encrypt_stages(text, key) if enkripsi
+                        else playfair_decrypt_stages(text, key)
+                    )
+                    result = detail["final"]
+                    stages = detail["stages"]
+                else:
+                    result = (
+                        playfair_encrypt(text, key) if enkripsi
+                        else playfair_decrypt(text, key)
+                    )
 
             elif cipher in ("chacha20", "blowfish"):
                 bkey = _tool_key(key)
+                kdf_label = (
+                    "Kunci heksadesimal 64 digit (32 byte)"
+                    if re.fullmatch(r"[0-9a-fA-F]{64}", key.strip())
+                    else "PBKDF2-HMAC-SHA256 (32 byte)"
+                )
                 if cipher == "chacha20":
-                    result = (
-                        chacha20_encrypt(text, bkey) if enkripsi
-                        else chacha20_decrypt(text, bkey)
-                    )
+                    if show_stages:
+                        detail = (
+                            chacha20_encrypt_stages(text, bkey) if enkripsi
+                            else chacha20_decrypt_stages(text, bkey)
+                        )
+                        result = detail["final"]
+                        stages = detail["stages"]
+                        stages[0]["parameter"].insert(0, {"label": "Turunan kunci", "nilai": kdf_label})
+                    else:
+                        result = (
+                            chacha20_encrypt(text, bkey) if enkripsi
+                            else chacha20_decrypt(text, bkey)
+                        )
                 else:
-                    result = (
-                        blowfish_encrypt(text, bkey) if enkripsi
-                        else blowfish_decrypt(text, bkey)
-                    )
-                token = result if enkripsi else text
-                stages = [_stage_modern(cipher, token, text, result, enkripsi)]
+                    if show_stages:
+                        detail = (
+                            blowfish_encrypt_stages(text, bkey) if enkripsi
+                            else blowfish_decrypt_stages(text, bkey)
+                        )
+                        result = detail["final"]
+                        stages = detail["stages"]
+                        stages[0]["parameter"].insert(0, {"label": "Turunan kunci", "nilai": kdf_label})
+                    else:
+                        result = (
+                            blowfish_encrypt(text, bkey) if enkripsi
+                            else blowfish_decrypt(text, bkey)
+                        )
 
             elif cipher == "super":
                 if not passphrase:
                     error = MSG.CRYPTO_PASSPHRASE_REQUIRED
                 else:
-                    detail = (
-                        super_encrypt_stages(text, passphrase=passphrase) if enkripsi
-                        else super_decrypt_stages(text, passphrase=passphrase)
-                    )
-                    result = detail["final"]
-                    stages = detail["stages"]
+                    if show_stages:
+                        detail = (
+                            super_encrypt_stages(text, passphrase=passphrase) if enkripsi
+                            else super_decrypt_stages(text, passphrase=passphrase)
+                        )
+                        result = detail["final"]
+                        stages = detail["stages"]
+                    else:
+                        result = (
+                            super_encrypt(text, passphrase=passphrase) if enkripsi
+                            else super_decrypt(text, passphrase=passphrase)
+                        )
             else:
                 error = MSG.CRYPTO_UNKNOWN_CIPHER
         except Exception:
@@ -300,4 +350,5 @@ def index():
         stages=stages,
         stages_judul=judul_tahapan,
         stages_satuan=satuan_tahapan,
+        show_stages=show_stages,
     ), status
