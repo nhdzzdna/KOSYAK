@@ -719,7 +719,20 @@
       }
       kirim('/api/collections/' + folderAktif + '/rename',
             { name: nama }).then(function () {
-        window.location.reload();
+        if (judul) {
+          judul.textContent = nama;
+        }
+        var kartu = document.querySelector(
+          '[data-folder-open][data-folder-id="' + String(folderAktif) + '"]');
+        if (kartu) {
+          kartu.setAttribute('data-folder-name', nama);
+          var label = kartu.querySelector('.album-name');
+          if (label) {
+            label.textContent = nama;
+          }
+        }
+        formGantiNama.hidden = true;
+        tampilkanSukses(pesan('rename') || 'Nama folder diperbarui.');
       }).catch(function (err) {
         tampilkanGalat(err.message);
       });

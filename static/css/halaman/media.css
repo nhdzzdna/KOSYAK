@@ -398,6 +398,20 @@
   padding-top: var(--kx-space-3);
 }
 
+.kx-media-viewer-rename {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  flex-wrap: wrap;
+}
+
+.kx-media-rename-form {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  flex-wrap: wrap;
+}
+
 /* ── Responsif ───────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .kx-media-layout {

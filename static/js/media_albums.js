@@ -37,7 +37,6 @@
   var pemuatAlbum = document.getElementById('album-loading');
   var kosongAlbum = document.getElementById('album-empty');
   var bagianSemua = document.getElementById('collection-all-section');
-  var bagianTanpaAlbum = document.getElementById('collection-unfiled-section');
 
   var IKON_KUNCI =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
@@ -112,11 +111,9 @@
   }
 
   function tampilkanDaftarSemua(tampil) {
-    [bagianSemua, bagianTanpaAlbum].forEach(function (bagian) {
-      if (bagian) {
-        bagian.hidden = !tampil;
-      }
-    });
+    if (bagianSemua) {
+      bagianSemua.hidden = !tampil;
+    }
   }
 
   function urai(resp) {
@@ -353,61 +350,86 @@
     return hasil;
   }
 
+  function pastikanGridSemua() {
+    var grid = document.getElementById('all-items');
+    if (grid) {
+      return grid;
+    }
+    var bagian = document.getElementById('collection-all-section');
+    if (!bagian) {
+      return null;
+    }
+    var body = bagian.querySelector('.kx-card-body');
+    if (!body) {
+      return null;
+    }
+    grid = document.createElement('div');
+    grid.id = 'all-items';
+    grid.className = 'kx-media-grid media-grid';
+    var kosong = document.getElementById('media-all-empty');
+    if (kosong && kosong.parentNode === body) {
+      body.insertBefore(grid, kosong);
+    } else {
+      body.appendChild(grid);
+    }
+    return grid;
+  }
+
+  function perbaruiKeadaanSemua() {
+    var grid = document.getElementById('all-items');
+    var kosong = document.getElementById('media-all-empty');
+    if (!grid || !kosong) {
+      return;
+    }
+    var ada = grid.querySelectorAll('[data-media-item]').length > 0;
+    grid.hidden = !ada;
+    kosong.hidden = ada;
+  }
+
   function pindahkan() {
     var ids = idTerpilih();
     if (!ids.length) return;
     var target = targetPindah ? targetPindah.value : '';
     var grant = target ? grantUntuk('album.unlock', target) : null;
+    var kartuTerpilih = [];
+    document.querySelectorAll('[data-select-file]:checked').forEach(function (cek) {
+      var kartu = cek.closest('[data-media-item]');
+      if (kartu) {
+        kartuTerpilih.push(kartu);
+      }
+    });
     kirim('/api/collections/move', {
       file_ids: ids,
       collection_id: target || null
     }, grant).then(function () {
-      if (target) {
-        ids.forEach(function (id) {
-          var el = document.querySelector('#unfiled-grid [data-file-id="' + id + '"]');
-          if (el) {
-            el.remove();
+      var gridSemua = pastikanGridSemua();
+      kartuTerpilih.forEach(function (kartu) {
+        var diAlbum = Boolean(kartu.closest('#album-items'));
+        if (target) {
+          if (!diAlbum) {
+            kartu.remove();
+          } else if (String(target) !== String(albumAktif)) {
+            kartu.remove();
+          } else {
+            kartu.setAttribute('data-collection-id', target);
           }
-        });
-        var sisa = document.querySelectorAll('#unfiled-grid [data-media-item]');
-        var kosong = document.getElementById('media-unfiled-empty');
-        if (sisa.length === 0 && kosong) {
-          kosong.hidden = false;
+        } else {
+          kartu.setAttribute('data-collection-id', '');
+          if (diAlbum && gridSemua) {
+            gridSemua.appendChild(kartu);
+          }
         }
-        var namaAlbum = targetPindah && targetPindah.options && targetPindah.selectedIndex >= 0
-          ? targetPindah.options[targetPindah.selectedIndex].text : '';
-        ids.forEach(function (id) {
-          var itemSemua = document.querySelector('#all-items [data-file-id="' + id + '"]');
-          if (!itemSemua) {
-            return;
-          }
-          itemSemua.setAttribute('data-collection-id', target);
-          var lencana = itemSemua.querySelector('.kx-media-folder-badge');
-          if (lencana && namaAlbum) {
-            lencana.textContent = namaAlbum;
-          } else if (namaAlbum) {
-            var meta = itemSemua.querySelector('.kx-media-card-meta');
-            if (meta) {
-              var pemisah = document.createElement('span');
-              pemisah.setAttribute('aria-hidden', 'true');
-              pemisah.textContent = 'Â·';
-              var baru = document.createElement('span');
-              baru.className = 'kx-badge kx-media-folder-badge';
-              baru.setAttribute('data-folder-badge', '');
-              baru.textContent = namaAlbum;
-              meta.appendChild(pemisah);
-              meta.appendChild(baru);
-            }
-          }
-        });
-        var bilah = document.getElementById('selection-bar');
-        if (bilah) bilah.hidden = true;
-        document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) { cb.checked = false; });
-        if (window.KX && KX.toast) {
-          KX.toast('Media berhasil dipindahkan ke album.', 'ok');
-        }
-      } else {
-        window.location.reload();
+      });
+      perbaruiKeadaanSemua();
+      if (bilahPilih) bilahPilih.hidden = true;
+      document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) {
+        cb.checked = false;
+      });
+      perbaruiPilihan();
+      if (window.KX && KX.toast) {
+        KX.toast(target
+          ? 'Media berhasil dipindahkan ke album.'
+          : 'Media berhasil dikeluarkan dari album.', 'success');
       }
     }).catch(function (err) {
       tampilkanGalat(err.message);
@@ -643,6 +665,27 @@
       return;
     }
 
+    if (event.target === tombolGantiNamaAlbum) {
+      formGantiNamaAlbum.hidden = !formGantiNamaAlbum.hidden;
+      if (!formGantiNamaAlbum.hidden) {
+        inputGantiNamaAlbum.value = judulAlbum ? judulAlbum.textContent : '';
+        inputGantiNamaAlbum.focus();
+        inputGantiNamaAlbum.select();
+      }
+      return;
+    }
+
+    if (event.target === tombolGantiNamaBerkas) {
+      formGantiNamaBerkas.hidden = !formGantiNamaBerkas.hidden;
+      if (!formGantiNamaBerkas.hidden) {
+        inputGantiNamaBerkas.value = kartuAktif
+          ? (kartuAktif.getAttribute('data-name') || '') : '';
+        inputGantiNamaBerkas.focus();
+        inputGantiNamaBerkas.select();
+      }
+      return;
+    }
+
     if (event.target === tombolPindah) {
       pindahkan();
       return;
@@ -728,7 +771,7 @@
         card.hidden = !cocok;
       });
       var pesanTakAda = document.getElementById('media-no-results');
-      var gridSemua = document.querySelector('.kx-card-body > .kx-media-grid');
+      var gridSemua = document.getElementById('all-items');
       if (pesanTakAda) {
         var adaYangTampil = Array.prototype.some.call(kartuList, function (c) { return !c.hidden; });
         pesanTakAda.hidden = kartuList.length === 0 || adaYangTampil;
@@ -773,6 +816,78 @@
       intent = { jenis: 'status', state: 'normal' };
     }
   }, true);
+
+  function perbaruiNamaAlbum(id, nama) {
+    var kartu = document.querySelector(
+      '[data-album-open][data-album-id="' + String(id) + '"]');
+    if (!kartu) {
+      return;
+    }
+    kartu.setAttribute('data-album-name', nama);
+    var label = kartu.querySelector('.album-name');
+    if (label) {
+      label.textContent = nama;
+    }
+  }
+
+  if (formGantiNamaAlbum) {
+    formGantiNamaAlbum.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!albumAktif) {
+        return;
+      }
+      var nama = inputGantiNamaAlbum ? inputGantiNamaAlbum.value.trim() : '';
+      if (!nama) {
+        tampilkanGalat(pesan('error'));
+        return;
+      }
+      kirim('/api/collections/' + albumAktif + '/rename', { name: nama })
+        .then(function () {
+          if (judulAlbum) {
+            judulAlbum.textContent = nama;
+          }
+          perbaruiNamaAlbum(albumAktif, nama);
+          formGantiNamaAlbum.hidden = true;
+          if (window.KX && typeof window.KX.toast === 'function') {
+            window.KX.toast('Nama album diperbarui.', 'success');
+          }
+        }).catch(function (err) {
+          tampilkanGalat(err.message);
+        });
+    });
+  }
+
+  if (formGantiNamaBerkas) {
+    formGantiNamaBerkas.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!kartuAktif) {
+        return;
+      }
+      var nama = inputGantiNamaBerkas ? inputGantiNamaBerkas.value.trim() : '';
+      if (!nama) {
+        tampilkanGalat(pesan('error'));
+        return;
+      }
+      var id = kartuAktif.getAttribute('data-file-id');
+      kirim('/api/media/' + id + '/rename', { name: nama }).then(function () {
+        kartuAktif.setAttribute('data-name', nama);
+        var label = kartuAktif.querySelector('.media-name');
+        if (label) {
+          label.textContent = nama;
+          label.title = nama;
+        }
+        if (judulPenampil) {
+          judulPenampil.textContent = nama;
+        }
+        formGantiNamaBerkas.hidden = true;
+        if (window.KX && typeof window.KX.toast === 'function') {
+          window.KX.toast('Nama berkas diperbarui.', 'success');
+        }
+      }).catch(function (err) {
+        tampilkanGalat(err.message);
+      });
+    });
+  }
 
   if (formBuatAlbum) {
     formBuatAlbum.addEventListener('submit', function (event) {
