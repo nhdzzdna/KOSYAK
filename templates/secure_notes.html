@@ -7,10 +7,7 @@
 
 {% block content %}
 <div class="kx-sn-page"
-     data-msg-open-loading="{{ MSG.NOTES_OPEN_LOADING }}"
-     data-msg-open-failed="{{ MSG.NOTES_OPEN_FAILED }}"
      data-msg-search-empty="{{ MSG.NOTES_SEARCH_EMPTY }}"
-     data-msg-new-title="{{ MSG.NOTES_NEW_TITLE }}"
      data-msg-delete-title="{{ MSG.NOTES_DELETE_TITLE }}"
      data-msg-delete-message="{{ MSG.NOTES_DELETE_MESSAGE }}">
   <div class="kx-sn-grid">
@@ -19,12 +16,7 @@
     <section class="kx-card kx-sn-daftar" aria-labelledby="sn-daftar-title">
       <header class="kx-card-head">
         <h2 class="kx-card-title" id="sn-daftar-title">Catatan tersimpan ({{ notes|length }})</h2>
-        <div class="kx-row">
-          <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
-          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
-            {{ ikon('plus', 15) }}<span>Catatan baru</span>
-          </button>
-        </div>
+        <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
       </header>
 
       <div class="kx-card-body kx-sn-daftar-body">
@@ -39,19 +31,55 @@
 
         <div class="kx-sn-lista" id="sn-daftar">
           {% for note in notes %}
-          <button type="button" class="kx-sn-baris" data-sn-id="{{ note.id }}"
-                  data-sn-judul="{{ note.title }}"
-                  data-sn-tanggal="{{ note.updated_at[:16] }}"
-                  data-sn-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}"
-                  data-sn-edit-url="{{ url_for('notes.edit', resource_id=note.id) }}"
-                  data-sn-hapus-url="{{ url_for('notes.delete', resource_id=note.id) }}">
-            <span class="kx-sn-baris-ikon" aria-hidden="true">{{ ikon('file-text', 17) }}</span>
-            <span class="kx-sn-baris-utama">
-              <span class="kx-sn-judul">{{ note.title }}</span>
-              <span class="kx-sn-tanggal">{{ note.updated_at[:16] }}</span>
-            </span>
-            <span class="kx-sn-baris-kunci" aria-hidden="true">{{ ikon('lock', 14) }}</span>
-          </button>
+          <article class="kx-sn-baris" data-sn-item="{{ note.id }}" data-sn-judul="{{ note.title }}">
+            <div class="kx-sn-baris-head">
+              <div class="kx-sn-baris-info">
+                <h3 class="kx-sn-judul">{{ note.title }}</h3>
+                <span class="kx-sn-tanggal">{{ note.updated_at[:16] }}</span>
+              </div>
+              <div class="kx-sn-aksi">
+                <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm" id="sn-buka"
+                        data-sn-buka="{{ note.id }}"
+                        data-reauth="note.open"
+                        data-reauth-resource="{{ note.id }}"
+                        data-sn-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}"
+                        data-sn-edit-url="{{ url_for('notes.edit', resource_id=note.id) }}">
+                  {{ ikon('eye', 14) }}<span>Buka</span>
+                </button>
+                <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}" class="kx-sn-form-hapus">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm" id="sn-hapus-btn"
+                          data-sn-hapus="{{ note.id }}"
+                          data-sn-nama="{{ note.title }}">
+                    {{ ikon('trash', 14) }}<span>Hapus</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="kx-sn-detail" data-sn-detail="{{ note.id }}" hidden>
+              <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}" class="kx-sn-edit-form" data-sn-edit-form="{{ note.id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <div class="kx-field">
+                  <label class="kx-label" for="sn-edit-judul-{{ note.id }}">Judul</label>
+                  <input type="text" class="kx-input" id="sn-edit-judul-{{ note.id }}" name="title" value="{{ note.title }}" required />
+                </div>
+                <div class="kx-field">
+                  <label class="kx-label" for="sn-edit-isi-{{ note.id }}">Isi catatan</label>
+                  <textarea class="kx-textarea kx-sn-isi" id="sn-edit-isi-{{ note.id }}" name="content" rows="8" required></textarea>
+                </div>
+                <div class="kx-sn-detail-aksi">
+                  <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm"
+                          data-reauth="note.edit" data-reauth-resource="{{ note.id }}">
+                    {{ ikon('lock', 14) }}<span>Simpan</span>
+                  </button>
+                  <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm" data-sn-tutup="{{ note.id }}">
+                    Tutup
+                  </button>
+                </div>
+              </form>
+            </div>
+          </article>
           {% endfor %}
         </div>
 
@@ -62,78 +90,40 @@
         </div>
         {% else %}
         <div class="kx-empty kx-sn-kosong-lista">
-          <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
+          <div class="kx-empty-icon" aria-hidden="true">{{ ikon('file-text', 32) }}</div>
           <p class="kx-empty-title">Belum ada catatan</p>
-          <p class="kx-empty-text">Gunakan tombol Catatan baru di atas untuk membuat catatan terenkripsi pertama Anda.</p>
+          <p class="kx-empty-text">Tulis catatan pada formulir di samping untuk menyimpannya.</p>
         </div>
         {% endif %}
       </div>
     </section>
 
-    <!-- ── Editor ────────────────────────────────────────────────────── -->
-    <section class="kx-card kx-sn-editor" aria-label="Editor catatan">
-      <div class="kx-sn-kosong" id="sn-kosong">
-        <div class="kx-empty">
-          <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
-          <p class="kx-empty-title">Belum ada catatan dipilih</p>
-          <p class="kx-empty-text">Pilih catatan pada daftar untuk membacanya, atau gunakan tombol Catatan baru di atas.</p>
-        </div>
-      </div>
-
-      <div class="kx-sn-editor-isi" id="sn-editor-isi" hidden>
-        <header class="kx-card-head">
-          <div class="kx-sn-editor-kepala">
-            <h2 class="kx-card-title" id="sn-editor-judul">{{ MSG.NOTES_NEW_TITLE }}</h2>
-            <p class="kx-sn-editor-meta" id="sn-editor-meta" hidden>
-              Diperbarui <span class="kx-sn-tanggal" id="sn-editor-tanggal"></span>
-            </p>
+    <!-- ── Tambah catatan (Form di samping) ────────────────────────────── -->
+    <aside class="kx-card kx-sn-tambah" aria-labelledby="sn-tambah-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="sn-tambah-title">Tambah catatan</h2>
+        <span aria-hidden="true">{{ ikon('file-text', 18) }}</span>
+      </header>
+      <div class="kx-card-body">
+        <form method="POST" action="{{ url_for('notes.add') }}" class="kx-sn-form" id="sn-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="kx-field">
+            <label class="kx-label" for="sn-tambah-judul">Judul</label>
+            <input type="text" class="kx-input" id="sn-tambah-judul" name="title"
+                   placeholder="Judul catatan" autocomplete="off" required />
           </div>
-          <button type="button" class="kx-btn kx-btn-sm kx-btn-danger" id="sn-hapus" hidden>
-            {{ ikon('trash', 15) }}<span>Hapus</span>
+          <div class="kx-field">
+            <label class="kx-label" for="sn-tambah-isi">Isi catatan</label>
+            <textarea class="kx-textarea kx-sn-isi" id="sn-tambah-isi" name="content"
+                      rows="8" placeholder="Tulis isi catatan…" required></textarea>
+          </div>
+          <button type="submit" class="kx-btn kx-btn-primary kx-btn-full" id="sn-simpan">
+            {{ ikon('lock', 15) }}<span>Simpan terenkripsi</span>
           </button>
-        </header>
-
-        <div class="kx-card-body kx-sn-editor-body">
-          <div class="kx-infobox kx-sn-buka" id="sn-buka-kotak" hidden>
-            {{ ikon('lock', 18) }}
-            <div class="kx-sn-buka-teks">
-              <p>{{ MSG.NOTES_OPEN_HINT }}</p>
-              <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" id="sn-buka"
-                      data-reauth="note.open">
-                {{ ikon('eye', 15) }}<span>Buka</span>
-              </button>
-            </div>
-          </div>
-
-          <form method="POST" action="{{ url_for('notes.add') }}" class="kx-sn-form" id="sn-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="kx-field">
-              <label class="kx-label" for="sn-judul">Judul</label>
-              <input type="text" class="kx-input" id="sn-judul" name="title"
-                     placeholder="Judul catatan" autocomplete="off" required />
-            </div>
-            <div class="kx-field">
-              <label class="kx-label" for="sn-isi">Isi catatan</label>
-              <textarea class="kx-textarea kx-sn-isi" id="sn-isi" name="content"
-                        rows="10" placeholder="Tulis isi catatan" required></textarea>
-            </div>
-            <div class="kx-sn-form-aksi">
-              <button type="submit" class="kx-btn kx-btn-primary" id="sn-simpan">
-                {{ ikon('lock', 15) }}<span>Simpan terenkripsi</span>
-              </button>
-              <button type="button" class="kx-btn kx-btn-secondary" id="sn-tutup" hidden>Tutup</button>
-              <button type="button" class="kx-btn kx-btn-secondary" id="sn-batal" hidden>Batal</button>
-            </div>
-          </form>
-        </div>
+        </form>
       </div>
-    </section>
+    </aside>
   </div>
-
-  <!-- Formulir hapus bersama; aksi diatur oleh secure_notes.js -->
-  <form method="POST" action="" class="kx-sn-hapus-form" id="sn-hapus-form" hidden>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  </form>
 </div>
 {% endblock %}
 

@@ -1,13 +1,13 @@
 /**
  * static/js/secure_notes.js
  * ───────────────────────────
- * Membuka isi Secure Notes hanya setelah grant note.open. Isi catatan tidak
- * pernah ditulis ke HTML awal; diambil lewat POST dengan header X-Reauth-Grant.
- *
- * Panel kanan berbagi satu formulir untuk mode "Catatan baru" (POST add, tanpa
- * verifikasi ulang) dan mode edit (POST edit, tombol simpan diberi
- * data-reauth note.edit). Semua teks antarmuka dibaca dari atribut data-msg-*
- * pada akar halaman (modules/strings.py), bukan teks JS.
+ * Membuka isi Secure Notes hanya setelah grant note.open (U2g):
+ * - Daftar catatan ringkas: judul, tanggal, tombol Buka dan Hapus berdampingan (8px).
+ * - Tombol Buka meminta grant note.open, mengambil isi catatan, lalu menampilkannya
+ *   di dalam kartu/baris yang sama dengan tombol Tutup.
+ * - Tombol Tutup menyembunyikan isi dan membersihkan teks dari DOM.
+ * - Hapus dikonfirmasi lewat KX.konfirmasiHapus (pindah ke Sampah).
+ * - Pencarian catatan lokal sisi klien via #sn-cari.
  */
 (function () {
   'use strict';
@@ -17,37 +17,9 @@
     return;
   }
 
-  var kotakKosong = document.getElementById('sn-kosong');
-  var editorIsi = document.getElementById('sn-editor-isi');
-  var editorJudul = document.getElementById('sn-editor-judul');
-  var editorMeta = document.getElementById('sn-editor-meta');
-  var editorTanggal = document.getElementById('sn-editor-tanggal');
-  var tombolHapus = document.getElementById('sn-hapus');
-  var kotakBuka = document.getElementById('sn-buka-kotak');
-  var tombolBuka = document.getElementById('sn-buka');
-  var form = document.getElementById('sn-form');
-  var inputJudul = document.getElementById('sn-judul');
-  var inputIsi = document.getElementById('sn-isi');
-  var tombolSimpan = document.getElementById('sn-simpan');
-  var tombolTutup = document.getElementById('sn-tutup');
-  var tombolBatal = document.getElementById('sn-batal');
-  var formHapus = document.getElementById('sn-hapus-form');
   var cari = document.getElementById('sn-cari');
   var takCocok = document.getElementById('sn-tak-cocok');
   var daftar = document.getElementById('sn-daftar');
-
-  var tambahUrl = form ? form.getAttribute('action') : '';
-  var elemenAktif = null;
-
-  function pesan(kunci, data) {
-    var teks = akar.getAttribute('data-msg-' + kunci) || '';
-    if (data) {
-      Object.keys(data).forEach(function (nama) {
-        teks = teks.split('{' + nama + '}').join(String(data[nama]));
-      });
-    }
-    return teks;
-  }
 
   function toast(teks, jenis) {
     if (window.KX && typeof KX.toast === 'function') {
@@ -55,329 +27,171 @@
     }
   }
 
-  function barisById(id) {
-    return daftar
-      ? daftar.querySelector('[data-sn-id="' + String(id) + '"]')
-      : null;
+  function grantUntuk(scope, resource) {
+    if (!window.CryptixReauth || typeof window.CryptixReauth.grantFor !== 'function') {
+      return null;
+    }
+    return window.CryptixReauth.grantFor(scope, resource);
   }
 
-  function setLabelBuka(memuat) {
-    if (!tombolBuka) {
-      return;
+  function mintaGrant(scope, resource) {
+    if (window.CryptixLock && typeof window.CryptixLock.mintaGrant === 'function') {
+      return window.CryptixLock.mintaGrant(scope, resource);
     }
-    var span = tombolBuka.querySelector('span');
-    if (!span) {
-      return;
+    var token = grantUntuk(scope, resource);
+    if (token) {
+      return Promise.resolve(token);
     }
-    if (memuat) {
-      if (!tombolBuka.getAttribute('data-label-asli')) {
-        tombolBuka.setAttribute('data-label-asli', span.textContent);
-      }
-      tombolBuka.disabled = true;
-      span.textContent = pesan('open-loading');
-    } else {
-      tombolBuka.disabled = false;
-      span.textContent = tombolBuka.getAttribute('data-label-asli') || span.textContent;
-    }
+    return Promise.reject(new Error('Autentikasi ulang diperlukan.'));
   }
 
-  function bersihkanForm() {
-    if (inputJudul) {
-      inputJudul.value = '';
-    }
-    if (inputIsi) {
-      inputIsi.value = '';
-    }
-  }
+  function bukaCatatan(baris, grant) {
+    var id = baris.getAttribute('data-sn-item');
+    var tombolBuka = baris.querySelector('[data-sn-buka]');
+    var openUrl = tombolBuka ? tombolBuka.getAttribute('data-sn-open-url') : ('/secure-notes/open/' + id);
 
-  function lepasReauthSimpan() {
-    if (!tombolSimpan) {
-      return;
+    var headers = { 'Content-Type': 'application/json' };
+    if (grant) {
+      headers['X-Reauth-Grant'] = grant;
     }
-    tombolSimpan.removeAttribute('data-reauth');
-    tombolSimpan.removeAttribute('data-reauth-resource');
-  }
 
-  function lepasPilihan() {
-    if (elemenAktif) {
-      elemenAktif.classList.remove('is-aktif');
-      elemenAktif = null;
-    }
-  }
-
-  // Empty state: belum ada catatan dipilih.
-  function tampilkanKosong() {
-    lepasPilihan();
-    if (kotakKosong) {
-      kotakKosong.hidden = false;
-    }
-    if (editorIsi) {
-      editorIsi.hidden = true;
-    }
-    if (form) {
-      form.action = tambahUrl;
-      form.hidden = true;
-    }
-    if (kotakBuka) {
-      kotakBuka.hidden = true;
-    }
-    if (tombolHapus) {
-      tombolHapus.hidden = true;
-    }
-    if (tombolTutup) {
-      tombolTutup.hidden = true;
-    }
-    if (tombolBatal) {
-      tombolBatal.hidden = true;
-    }
-    lepasReauthSimpan();
-    bersihkanForm();
-  }
-
-  // Mode catatan baru: formulir langsung aktif tanpa verifikasi ulang.
-  function tampilkanBaru() {
-    lepasPilihan();
-    if (kotakKosong) {
-      kotakKosong.hidden = true;
-    }
-    if (editorIsi) {
-      editorIsi.hidden = false;
-    }
-    if (editorJudul) {
-      editorJudul.textContent = pesan('new-title');
-    }
-    if (editorMeta) {
-      editorMeta.hidden = true;
-    }
-    if (tombolHapus) {
-      tombolHapus.hidden = true;
-    }
-    if (kotakBuka) {
-      kotakBuka.hidden = true;
-    }
-    if (form) {
-      form.action = tambahUrl;
-      form.hidden = false;
-    }
-    lepasReauthSimpan();
-    bersihkanForm();
-    if (tombolTutup) {
-      tombolTutup.hidden = true;
-    }
-    if (tombolBatal) {
-      tombolBatal.hidden = false;
-    }
-    if (inputJudul) {
-      inputJudul.focus();
-    }
-  }
-
-  // Mode catatan terpilih: editor menunggu "Buka" sebelum isi ditampilkan.
-  function pilihCatatan(el) {
-    lepasPilihan();
-    elemenAktif = el;
-    el.classList.add('is-aktif');
-
-    if (kotakKosong) {
-      kotakKosong.hidden = true;
-    }
-    if (editorIsi) {
-      editorIsi.hidden = false;
-    }
-    if (editorJudul) {
-      editorJudul.textContent = el.getAttribute('data-sn-judul') || '';
-    }
-    if (editorTanggal) {
-      editorTanggal.textContent = el.getAttribute('data-sn-tanggal') || '';
-    }
-    if (editorMeta) {
-      editorMeta.hidden = false;
-    }
-    if (tombolHapus) {
-      tombolHapus.setAttribute('data-sn-nama', el.getAttribute('data-sn-judul') || '');
-      tombolHapus.setAttribute('data-sn-hapus-url', el.getAttribute('data-sn-hapus-url') || '');
-      tombolHapus.hidden = false;
-    }
-    if (tombolBuka) {
-      tombolBuka.setAttribute('data-reauth-resource', el.getAttribute('data-sn-id') || '');
-    }
-    if (kotakBuka) {
-      kotakBuka.hidden = false;
-    }
-    if (form) {
-      form.hidden = true;
-    }
-    lepasReauthSimpan();
-    bersihkanForm();
-    if (tombolTutup) {
-      tombolTutup.hidden = true;
-    }
-    if (tombolBatal) {
-      tombolBatal.hidden = true;
-    }
-  }
-
-  // Setelah "Tutup": isi dikeluarkan dari DOM, editor kembali menunggu Buka.
-  function tutupKonten() {
-    bersihkanForm();
-    lepasReauthSimpan();
-    if (form) {
-      form.hidden = true;
-    }
-    if (kotakBuka) {
-      kotakBuka.hidden = false;
-    }
-    if (tombolTutup) {
-      tombolTutup.hidden = true;
-    }
-  }
-
-  function buka(id, grant) {
-    var el = barisById(id);
-    if (!el) {
-      return;
-    }
-    var url = el.getAttribute('data-sn-open-url');
-    var urlEdit = el.getAttribute('data-sn-edit-url');
-    if (!url || !urlEdit) {
-      return;
-    }
-    setLabelBuka(true);
-
-    apiFetch(url, {
+    apiFetch(openUrl, {
       method: 'POST',
-      headers: { 'X-Reauth-Grant': grant },
+      headers: headers,
       credentials: 'same-origin'
     }).then(function (resp) {
-      return resp.json().then(function (data) {
+      return resp.json().catch(function () { return {}; }).then(function (data) {
         if (!resp.ok || !data.success) {
-          throw new Error(data.error || pesan('open-failed'));
+          throw new Error(data.error || 'Catatan gagal dibuka.');
         }
         return data;
       });
     }).then(function (data) {
-      setLabelBuka(false);
+      var detail = baris.querySelector('[data-sn-detail]');
+      if (!detail) return;
+
+      var inputJudul = detail.querySelector('input[name="title"]');
+      var inputIsi = detail.querySelector('textarea[name="content"]');
+
       if (inputJudul) {
         inputJudul.value = data.title == null ? '' : String(data.title);
       }
       if (inputIsi) {
         inputIsi.value = data.content == null ? '' : String(data.content);
       }
-      if (kotakBuka) {
-        kotakBuka.hidden = true;
-      }
-      if (form) {
-        form.action = urlEdit;
-        form.hidden = false;
-      }
-      if (tombolSimpan) {
-        tombolSimpan.setAttribute('data-reauth', 'note.edit');
-        tombolSimpan.setAttribute('data-reauth-resource', String(id));
-      }
-      if (tombolTutup) {
-        tombolTutup.hidden = false;
-      }
+
+      detail.hidden = false;
       if (inputIsi) {
         inputIsi.focus();
       }
     }).catch(function (err) {
-      setLabelBuka(false);
-      toast(err && err.message ? err.message : pesan('open-failed'), 'danger');
+      toast(err && err.message ? err.message : 'Catatan gagal dibuka.', 'danger');
     });
   }
 
-  // ── Aksi klik ────────────────────────────────────────────────────────
+  function tutupCatatan(baris) {
+    var detail = baris.querySelector('[data-sn-detail]');
+    if (detail) {
+      var inputIsi = detail.querySelector('textarea[name="content"]');
+      if (inputIsi) {
+        inputIsi.value = '';
+      }
+      detail.hidden = true;
+    }
+  }
+
+  // ── Event klik: Buka & Tutup ──────────────────────────────────────────────
   document.addEventListener('click', function (event) {
-    var el = event.target.closest('[data-sn-baru]');
-    if (el) {
-      tampilkanBaru();
-      return;
-    }
+    var btnBuka = event.target.closest('[data-sn-buka]');
+    if (btnBuka) {
+      var barisBuka = btnBuka.closest('[data-sn-item]');
+      if (!barisBuka) return;
 
-    if (daftar) {
-      el = event.target.closest('[data-sn-id]');
-      if (el && daftar.contains(el)) {
-        pilihCatatan(el);
-        return;
-      }
-    }
-
-    if (event.target.closest('#sn-batal')) {
-      tampilkanKosong();
-      return;
-    }
-
-    if (event.target.closest('#sn-tutup')) {
-      tutupKonten();
-      return;
-    }
-
-    el = event.target.closest('#sn-hapus');
-    if (el) {
-      var nama = el.getAttribute('data-sn-nama') || '';
-      var urlHapus = el.getAttribute('data-sn-hapus-url') || '';
-      var kirim = function () {
-        if (formHapus && urlHapus) {
-          formHapus.action = urlHapus;
-          formHapus.submit();
-        }
-      };
-      if (window.KX && typeof KX.konfirmasiHapus === 'function') {
-        KX.konfirmasiHapus({
-          judul: pesan('delete-title'),
-          nama: nama,
-          pesan: pesan('delete-message'),
-          onKonfirmasi: kirim
-        });
+      var id = barisBuka.getAttribute('data-sn-item');
+      var grant = grantUntuk('note.open', id);
+      if (grant) {
+        bukaCatatan(barisBuka, grant);
       } else {
-        kirim();
+        mintaGrant('note.open', id).then(function (token) {
+          bukaCatatan(barisBuka, token);
+        }).catch(function (err) {
+          if (err && err.message) toast(err.message, 'danger');
+        });
       }
+      return;
+    }
+
+    var btnTutup = event.target.closest('[data-sn-tutup]');
+    if (btnTutup) {
+      var barisTutup = btnTutup.closest('[data-sn-item]');
+      if (barisTutup) {
+        tutupCatatan(barisTutup);
+      }
+      return;
     }
   });
 
-  // Enter di dalam formulir edit harus melewati tombol ber-data-reauth,
-  // bukan mengirim POST langsung tanpa grant.
-  document.addEventListener('submit', function (event) {
-    if (!form || event.target !== form) {
-      return;
-    }
-    if (!tombolSimpan || !tombolSimpan.hasAttribute('data-reauth')) {
-      return;
-    }
-    event.preventDefault();
-    tombolSimpan.click();
-  }, true);
-
-  // ── Grant reauth ─────────────────────────────────────────────────────
+  // ── Event listener untuk reauth callback ─────────────────────────────────
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var detail = event.detail || {};
-    if (detail.scope !== 'note.open' || !detail.resource) {
-      return;
+    if (detail.scope === 'note.open' && detail.resource) {
+      var baris = document.querySelector('[data-sn-item="' + detail.resource + '"]');
+      if (baris) {
+        bukaCatatan(baris, detail.grant);
+      }
     }
-    buka(String(detail.resource), detail.token);
   });
 
-  // ── Pencarian daftar ─────────────────────────────────────────────────
-  function saring() {
-    if (!daftar) {
-      return;
-    }
-    var kata = (cari && cari.value ? cari.value : '').trim().toLowerCase();
-    var cocok = 0;
-    daftar.querySelectorAll('[data-sn-id]').forEach(function (el) {
-      var judul = (el.getAttribute('data-sn-judul') || '').toLowerCase();
-      var kena = !kata || judul.indexOf(kata) !== -1;
-      el.hidden = !kena;
-      if (kena) {
-        cocok += 1;
+  // ── Pencarian catatan di sisi klien ──────────────────────────────────────
+  if (cari) {
+    cari.addEventListener('input', function () {
+      var kueri = cari.value.trim().toLowerCase();
+      var barisList = document.querySelectorAll('[data-sn-item]');
+      var cocokAda = false;
+
+      barisList.forEach(function (baris) {
+        var judul = (baris.getAttribute('data-sn-judul') || '').toLowerCase();
+        var cocok = !kueri || judul.indexOf(kueri) !== -1;
+        baris.hidden = !cocok;
+        if (cocok) cocokAda = true;
+      });
+
+      if (takCocok) {
+        takCocok.hidden = barisList.length === 0 || cocokAda;
       }
     });
-    if (takCocok) {
-      takCocok.hidden = cocok > 0;
-    }
   }
 
-  if (cari) {
-    cari.addEventListener('input', saring);
-  }
+  // ── Hapus via KX.konfirmasiHapus ─────────────────────────────────────────
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || !form.action || form.action.indexOf('/secure-notes/delete/') === -1) {
+      return;
+    }
+    if (form.getAttribute('data-kx-confirmed') === '1') {
+      return;
+    }
+
+    event.preventDefault();
+    var baris = form.closest('[data-sn-item]');
+    var namaCatatan = baris ? baris.getAttribute('data-sn-judul') : 'catatan ini';
+
+    if (window.KX && typeof window.KX.konfirmasiHapus === 'function') {
+      window.KX.konfirmasiHapus({
+        judul: 'Pindahkan ke Sampah?',
+        nama: namaCatatan,
+        pesan: '{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana.',
+        labelTombol: 'Pindahkan',
+        onKonfirmasi: function () {
+          form.setAttribute('data-kx-confirmed', '1');
+          form.submit();
+        }
+      });
+    } else {
+      if (window.confirm('Pindahkan ' + namaCatatan + ' ke Sampah?')) {
+        form.setAttribute('data-kx-confirmed', '1');
+        form.submit();
+      }
+    }
+  });
 })();
