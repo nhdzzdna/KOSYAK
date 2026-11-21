@@ -6,10 +6,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/audio.css') }}" />
 {% endblock %}
 
-{% macro nama_folder(cid) -%}
-  {%- for a in folders -%}{%- if a.id == cid -%}{{ a.name }}{%- endif -%}{%- endfor -%}
-{%- endmacro %}
-
 {% macro track_row(f) %}
 <tr class="kx-audio-tr music-track{% if f.state == 'locked' %} item-terkunci{% endif %}"
     data-track
@@ -38,9 +34,6 @@
     <span class="kx-audio-track-meta audio-track-meta">{{ f.extension|upper }}</span>
   </td>
   <td class="kx-audio-cell-mono">
-    <span data-folder-badge>{{ nama_folder(f.collection_id) or 'Tanpa folder' }}</span>
-  </td>
-  <td class="kx-audio-cell-mono">
     <span>-</span>
   </td>
   <td>
@@ -56,6 +49,15 @@
         {{ ikon('more-horizontal', 16) }}
       </button>
       <div class="kx-audio-menu-dropdown" data-menu-dropdown hidden>
+        {% if f.state == 'locked' %}
+        <button type="button" class="kx-audio-menu-item" data-track-unlock>
+          {{ ikon('lock', 14) }}<span>Lepas kunci</span>
+        </button>
+        {% else %}
+        <button type="button" class="kx-audio-menu-item" data-track-lock>
+          {{ ikon('lock', 14) }}<span>Kunci</span>
+        </button>
+        {% endif %}
         {% if winamp_available %}
         <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -84,14 +86,8 @@
 {% endmacro %}
 
 {% block content %}
-<div id="collection-page" data-page="musik" data-csrf="{{ csrf_token() }}"></div>
-
 <div id="collection-messages"
-     data-msg-move="{{ msg.move }}"
-     data-msg-state="{{ msg.state }}"
-     data-msg-need-folder="{{ msg.need_folder }}"
      data-msg-error="{{ msg.error }}"
-     data-msg-delete-confirm="{{ msg.delete_confirm }}"
      data-msg-no-track="{{ msg.no_track }}"
      data-msg-play="{{ msg.play }}"
      data-msg-pause="{{ msg.pause }}"></div>
@@ -100,8 +96,8 @@
   <div id="collection-alert" class="kx-doc-alert alert alert-danger" hidden></div>
 
   <div class="kx-audio-layout audio-layout">
-    <!-- ── Panel samping: Upload & Folder ── -->
-    <aside class="kx-audio-side audio-side" aria-label="Unggah dan folder audio">
+    <!-- ── Panel samping: Unggah ── -->
+    <aside class="kx-audio-side audio-side" aria-label="Unggah audio">
       <section id="audio-upload" class="kx-card kx-audio-upload" aria-labelledby="audio-upload-title">
         <div class="kx-card-head">
           <h2 class="kx-card-title" id="audio-upload-title">{{ msg.upload_title }}</h2>
@@ -134,112 +130,10 @@
           {% endif %}
         </div>
       </section>
-
-      <section class="kx-card kx-audio-folders" aria-labelledby="audio-folders-title">
-        <div class="kx-card-head">
-          <h2 class="kx-card-title" id="audio-folders-title">{{ msg.folder_section }}</h2>
-        </div>
-        <div class="kx-card-body">
-          <form id="folder-create-form" class="kx-audio-folder-form audio-folder-form" novalidate>
-            <div class="kx-field">
-              <label for="folder-create-name" class="kx-label">Folder baru</label>
-              <input type="text" id="folder-create-name" class="kx-input"
-                     placeholder="{{ msg.folder_placeholder }}" maxlength="120" required />
-            </div>
-            <label class="kx-audio-folder-lock kx-label audio-folder-lock">
-              <input type="checkbox" id="folder-create-locked" class="kx-checkbox" />
-              <span>{{ msg.folder_lock_label }}</span>
-            </label>
-            <button type="submit" class="kx-btn kx-btn-secondary kx-btn-sm kx-btn-full">
-              {{ ikon('plus', 15) }}
-              <span>{{ msg.folder_create_button }}</span>
-            </button>
-          </form>
-
-          {% if folders %}
-          <div class="kx-audio-folder-grid audio-folder-grid">
-            {% for a in folders %}
-            <button type="button" class="kx-audio-folder-btn audio-folder-card" data-folder-open
-                    data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
-                    data-folder-locked="{{ 1 if a.locked else 0 }}">
-              <span class="kx-audio-folder-icon audio-folder-icon{{ ' is-locked' if a.locked else '' }}" aria-hidden="true">
-                {% if a.locked %}
-                  {{ ikon('lock', 18) }}
-                {% else %}
-                  {{ ikon('folder', 18) }}
-                {% endif %}
-              </span>
-              <span class="kx-audio-folder-body audio-folder-body">
-                <span class="kx-audio-folder-name album-name">{{ a.name }}</span>
-                <span class="kx-audio-folder-count album-count">{{ a.jumlah }} {{ msg.count }}{% if a.locked %} · {{ msg.locked_suffix }}{% endif %}</span>
-              </span>
-              <span class="kx-audio-folder-chevron audio-folder-chevron" aria-hidden="true">
-                {{ ikon('chevron-down', 16) }}
-              </span>
-            </button>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div class="kx-empty">
-            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('folder', 32) }}</div>
-            <p class="kx-empty-title">{{ msg.empty }}</p>
-            <p class="kx-empty-text">Buat folder untuk mengelompokkan audio.</p>
-          </div>
-          {% endif %}
-        </div>
-      </section>
     </aside>
 
-    <!-- ── Panel Utama: Detail Folder, Semua, Tanpa Folder ── -->
+    <!-- ── Panel Utama: Daftar Trek ── -->
     <div class="kx-audio-main audio-main">
-      <section id="folder-detail" class="kx-card kx-audio-folder-detail audio-folder-detail" hidden>
-        <div class="kx-card-head kx-audio-folder-detail-head audio-folder-head">
-          <div class="kx-audio-breadcrumb audio-breadcrumb">
-            <span class="kx-audio-breadcrumb-root audio-breadcrumb-root">{{ msg.title }}</span>
-            <span class="kx-audio-breadcrumb-sep audio-breadcrumb-sep" aria-hidden="true">/</span>
-            <span id="folder-detail-title" class="kx-audio-breadcrumb-name"></span>
-          </div>
-          <button type="button" id="folder-back" class="kx-btn kx-btn-secondary kx-btn-sm">Kembali</button>
-        </div>
-        <div class="kx-card-body">
-          <div class="kx-audio-folder-actions audio-folder-actions">
-            <button type="button" id="folder-rename" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.folder_rename }}</button>
-            <button type="button" id="folder-lock-toggle" class="kx-btn kx-btn-secondary kx-btn-sm"
-                    data-label-lock="{{ msg.folder_lock_toggle }}"
-                    data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
-            <button type="button" id="folder-delete" class="kx-btn kx-btn-danger kx-btn-sm">{{ msg.folder_delete }}</button>
-          </div>
-          <form id="folder-rename-form" class="kx-audio-folder-rename-form audio-folder-rename" hidden novalidate>
-            <input type="text" id="folder-rename-input" class="kx-input" maxlength="120" required />
-            <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm">Simpan</button>
-          </form>
-
-          <div id="folder-loading" class="audio-loading" hidden>Memuat isi folder…</div>
-          <div class="kx-table-wrap mt-3">
-            <table class="kx-audio-table kx-table">
-              <thead>
-                <tr>
-                  <th style="width:36px;"></th>
-                  <th style="width:44px;"></th>
-                  <th>Judul</th>
-                  <th>Folder</th>
-                  <th>Durasi</th>
-                  <th>Status</th>
-                  <th style="width:44px;"></th>
-                </tr>
-              </thead>
-              <tbody id="folder-items" data-track-list></tbody>
-            </table>
-          </div>
-          <div id="folder-empty" class="kx-empty audio-empty" hidden>
-            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('headphones', 32) }}</div>
-            <p class="kx-empty-title">Folder ini belum berisi audio</p>
-            <p class="kx-empty-text">Pindahkan audio ke folder ini dari daftar tanpa folder.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Semua Audio -->
       <section id="collection-all-section" class="kx-card" aria-labelledby="audio-all-title">
         <div class="kx-card-head">
           <h2 class="kx-card-title" id="audio-all-title">Semua</h2>
@@ -249,7 +143,7 @@
           <div class="kx-audio-toolbar">
             <div class="kx-field kx-audio-search-wrap">
               <label for="audio-search" class="kx-label">Cari trek</label>
-              <input type="search" id="audio-search" class="kx-input" placeholder="{{ msg.search_placeholder or 'Cari trek...' }}" />
+              <input type="search" id="audio-search" class="kx-input" placeholder="Cari trek..." />
             </div>
           </div>
 
@@ -263,7 +157,6 @@
                   </th>
                   <th style="width:44px;"></th>
                   <th>Judul</th>
-                  <th>Folder</th>
                   <th>Durasi</th>
                   <th>Status</th>
                   <th style="width:44px;"></th>
@@ -289,60 +182,15 @@
           </div>
         </div>
       </section>
-
-      <!-- Tanpa Folder -->
-      <section id="collection-unfiled-section" class="kx-card" aria-labelledby="audio-library-title">
-        <div class="kx-card-head">
-          <h2 class="kx-card-title" id="audio-library-title">{{ msg.unfiled_section }}</h2>
-          <span class="kx-badge kx-badge-ok">{{ unfiled|length }} audio</span>
-        </div>
-        <div class="kx-card-body">
-          {% if unfiled %}
-          <div class="kx-table-wrap">
-            <table class="kx-audio-table kx-table">
-              <thead>
-                <tr>
-                  <th style="width:36px;"></th>
-                  <th style="width:44px;"></th>
-                  <th>Judul</th>
-                  <th>Folder</th>
-                  <th>Durasi</th>
-                  <th>Status</th>
-                  <th style="width:44px;"></th>
-                </tr>
-              </thead>
-              <tbody id="unfiled-items" data-track-list>
-                {% for f in unfiled %}{{ track_row(f) }}{% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% endif %}
-          {% if semua %}
-          <div id="audio-unfiled-empty" class="kx-empty"{% if unfiled %} hidden{% endif %}>
-            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('headphones', 32) }}</div>
-            <p class="kx-empty-title">{{ msg.unfiled_empty }}</p>
-            <p class="kx-empty-text">Unggah audio atau pindahkan berkas dari folder.</p>
-          </div>
-          {% endif %}
-        </div>
-      </section>
     </div>
   </div>
 
   <!-- Bar Aksi Mengambang (Pilihan Massal) -->
   <div id="selection-bar" class="kx-aksi-mengambang selection-bar audio-selection" hidden>
     <span id="selection-count" class="kx-aksi-mengambang-teks audio-selection-count" data-kx-jumlah>0 dipilih</span>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <select id="move-target" class="kx-select kx-select-sm">
-        <option value="">{{ msg.move_none }}</option>
-        {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
-      </select>
-      <button type="button" id="move-button" class="kx-btn kx-btn-primary kx-btn-sm">{{ msg.move_button }}</button>
-    </div>
     <div class="kx-aksi-mengambang-tombol">
       <button type="button" id="lock-items-button" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.lock_items }}</button>
-      <button type="button" id="unlock-items-button" class="kx-btn kx-btn-secondary kx-btn-sm"
-              data-reauth="item.unlock" data-reauth-resource="">{{ msg.unlock_items }}</button>
+      <button type="button" id="unlock-items-button" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.unlock_items }}</button>
     </div>
   </div>
 </div>
@@ -401,6 +249,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/item_lock.js') }}"></script>
-<script src="{{ url_for('static', filename='js/collection_folders.js') }}"></script>
 <script src="{{ url_for('static', filename='js/musik.js') }}"></script>
 {% endblock %}

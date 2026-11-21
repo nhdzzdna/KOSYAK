@@ -106,15 +106,18 @@ def _baris_tabel(tabel: str) -> list[list[str]]:
 
 
 class TestCryptoToolsForm:
-    def test_form_contains_csrf_and_no_steps_option(self, client):
+    def test_form_contains_csrf_and_stages_option(self, client):
         page = client.get("/crypto-tools")
         body = page.get_data(as_text=True)
         assert page.status_code == 200
         assert 'name="csrf_token"' in body
-        assert 'name="show_steps"' not in body
-        assert 'id="ct-show-steps"' not in body
-        assert 'id="ct-steps-field"' not in body
-        assert "Tampilkan tahapan" not in body
+        assert 'name="show_stages"' in body
+        assert 'id="ct-show-stages"' in body
+        assert "Tampilkan tahapan" in body
+        assert 'autocomplete="new-password"' in body
+        assert 'data-lpignore="true"' in body
+        assert "Kunci enkripsi" in body
+        assert "Bukan kata sandi akun Anda." in body
 
     def test_hint_vigenere_dan_pbkdf2_tersembunyi_bawaan(self, client):
         body = client.get("/crypto-tools").get_data(as_text=True)
@@ -135,6 +138,7 @@ class TestSuperEncryptionRoute:
         page = _post(
             client, cipher="super", action="encrypt",
             text="Halo Super Encryption", passphrase=PASSPHRASE,
+            show_stages="1",
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
@@ -145,15 +149,15 @@ class TestSuperEncryptionRoute:
         ):
             assert label in body
 
-    def test_encrypt_always_shows_layers_without_checkbox(self, client):
+    def test_encrypt_without_checkbox_has_no_stages(self, client):
         page = _post(
             client, cipher="super", action="encrypt",
             text="Halo", passphrase=PASSPHRASE,
         )
         body = page.get_data(as_text=True)
         assert "CXSE2." in body
-        assert "Layer 1 — Vigenere" in body
-        assert len(_trace_tables(body)) == 4
+        assert "kx-ct-tahapan" not in body
+        assert len(_trace_tables(body)) == 0
 
     def test_decrypt_roundtrip(self, client):
         pesan = "Pesan terenkripsi lewat rute"
@@ -262,6 +266,7 @@ class TestSuperEncryptionTraceRoute:
         page = _post(
             client, cipher="super", action="encrypt",
             text="A" * 300, passphrase=PASSPHRASE,
+            show_stages="1",
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
@@ -277,6 +282,7 @@ class TestSuperEncryptionTraceRoute:
         page = _post(
             client, cipher="super", action="encrypt",
             text="Halo Dunia", passphrase=PASSPHRASE,
+            show_stages="1",
         )
         body = page.get_data(as_text=True)
         assert "***" in body
@@ -309,7 +315,7 @@ def test_tabel_jejak_tunggal_tiap_cipher_dan_aksi(client, cipher, aksi, kunci):
             masukan = pesan if enkripsi else blowfish_encrypt(pesan, bkey)
 
     page = _post(
-        client, cipher=cipher, action=aksi, text=masukan, key=kunci,
+        client, cipher=cipher, action=aksi, text=masukan, key=kunci, show_stages="1",
     )
     body = page.get_data(as_text=True)
     assert page.status_code == 200
@@ -367,7 +373,7 @@ def test_jejak_super_enkripsi_dan_dekripsi(client, aksi):
     enkripsi = aksi == "encrypt"
     masukan = pesan if enkripsi else super_encrypt(pesan, passphrase=PASSPHRASE)
     page = _post(
-        client, cipher="super", action=aksi, text=masukan, passphrase=PASSPHRASE,
+        client, cipher="super", action=aksi, text=masukan, passphrase=PASSPHRASE, show_stages="1",
     )
     body = page.get_data(as_text=True)
     assert page.status_code == 200

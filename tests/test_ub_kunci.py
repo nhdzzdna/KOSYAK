@@ -442,9 +442,11 @@ class TestItemUnlockGrant:
         assert resp.get_json()["message"] == MSG.ITEM_UNLOCKED
         assert _state_item(fid) == "normal"
 
-        body = client.get("/media-vault").get_data(as_text=True)
-        assert f'data-file-id="{fid}"' in body
-        assert 'data-locked="0"' in body
+        # Berkas yang berada di album tidak lagi tampil di bagian Semua;
+        # status normalnya diperiksa lewat API isi album.
+        data = client.get(f"/api/collections/{cid}/items").get_json()
+        assert data["items"][0]["id"] == fid
+        assert data["items"][0]["state"] == "normal"
 
         # Token sekali pakai sudah hangus setelah dipakai.
         ulang = _ubah_state(client, cid, [fid], "normal", grant)
@@ -478,9 +480,17 @@ class TestSemua:
                       _grant(client, "album.unlock", cid)).status_code == 200
         reauth.clear()
 
-        _grant(client, "album.unlock", cid)
+        token = _grant(client, "album.unlock", cid)
         body = client.get("/media-vault").get_data(as_text=True)
-        assert f'data-file-id="{fid}"' in body
+        # Isi album tetap tidak tampil di bagian Semua, tetapi dapat dibuka
+        # lewat API album saat grant aktif.
+        assert f'data-file-id="{fid}"' not in body
+        data = client.get(
+            f"/api/collections/{cid}/items",
+            headers={"X-Reauth-Grant": token},
+        )
+        assert data.status_code == 200
+        assert data.get_json()["items"][0]["id"] == fid
 
     def test_folder_musik_terkunci(self, client):
         cid = _buat_koleksi(client, "Rahasia", "musik", locked=True)
@@ -490,7 +500,8 @@ class TestSemua:
         reauth.clear()
 
         body = client.get("/audio").get_data(as_text=True)
-        assert "Rahasia" in body
+        # Halaman Audio tidak lagi menampilkan panel folder, tetapi isi
+        # koleksi terkunci tetap tidak dimuat tanpa grant.
         assert f'data-file-id="{fid}"' not in body
 
         _grant(client, "album.unlock", cid)

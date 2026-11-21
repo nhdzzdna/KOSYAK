@@ -133,21 +133,21 @@ def musik():
     with get_db() as db:
         data = halaman_koleksi(db, session["user_id"], "musik", ("audio",), db_key)
 
+    # Daftar satu tingkat: semua audio di luar koleksi (termasuk yang terkunci)
+    # serta isi koleksi terbuka. Isi koleksi terkunci tetap tidak dimuat.
+    terlihat = {item["id"] for item in data["semua"]}
+    daftar_audio = [
+        info for info in data["info"].values()
+        if info["collection_id"] is None or info["id"] in terlihat
+    ]
+
     return render_template(
         "musik.html",
-        folders=data["folders"],
-        unfiled=data["unfiled"],
-        semua=data["semua"],
+        semua=daftar_audio,
         winamp_available=is_winamp_available(),
         msg={
             "title": MSG.MUSIC_TITLE,
             "upload_title": MSG.MUSIC_UPLOAD_TITLE,
-            "folder_section": MSG.MUSIC_FOLDER_SECTION,
-            "unfiled_section": MSG.MUSIC_UNFILED_SECTION,
-            "player": MSG.MUSIC_SECTION,
-            "empty": MSG.MUSIC_EMPTY,
-            "unfiled_empty": MSG.MUSIC_UNFILED_EMPTY,
-            "delete_confirm": MSG.MUSIC_DELETE_CONFIRM,
             "no_track": MSG.MUSIC_NO_TRACK,
             "prev": MSG.MUSIC_PREV,
             "next": MSG.MUSIC_NEXT,
@@ -155,23 +155,8 @@ def musik():
             "pause": MSG.MUSIC_PAUSE,
             "winamp": MSG.MUSIC_WINAMP_BUTTON,
             "pick": MSG.MUSIC_TRACK_PICK,
-            "temp_warning": MSG.MEDIA_TEMP_WARNING,
-            "folder_placeholder": MSG.FOLDER_CREATE_PLACEHOLDER,
-            "folder_create_button": MSG.FOLDER_CREATE_BUTTON,
-            "folder_lock_label": MSG.FOLDER_LOCK_LABEL,
-            "folder_rename": MSG.FOLDER_RENAME_BUTTON,
-            "folder_delete": MSG.FOLDER_DELETE_BUTTON,
-            "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
-            "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
-            "count": MSG.FOLDER_COUNT,
-            "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
-            "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
-            "move_button": MSG.FOLDER_MOVE_BUTTON,
             "lock_items": MSG.COLLECTION_LOCK_ITEMS,
             "unlock_items": MSG.COLLECTION_UNLOCK_ITEMS,
-            "move": MSG.COLLECTION_MOVED,
-            "state": MSG.COLLECTION_STATE_CHANGED,
-            "need_folder": MSG.FOLDER_PICK_NOTE,
             "error": MSG.COLLECTION_ACTION_DENIED,
         },
     )

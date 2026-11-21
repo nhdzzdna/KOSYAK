@@ -184,6 +184,14 @@ class TestAccountVault:
         # Kata sandi selalu tersamar (input password) di semua mode.
         assert body.count('type="password"') >= 3
 
+        # F2: Tanpa tombol salin di baris maupun reveal, kolom sandi reveal dan edit ber-data-kx-sandi
+        assert "data-av-salin" not in body
+        assert "data-copy-field" not in body
+        assert "data-msg-copy-done" not in body
+        assert "data-msg-copy-failed" not in body
+        assert re.search(r'data-kx-sandi[^>]*>\s*<input[^>]*data-field-password="\d+"', body)
+        assert re.search(r'data-kx-sandi[^>]*>\s*<input[^>]*id="edit-password-\d+"', body)
+
 
 # ── Secure Notes ─────────────────────────────────────────────────────────────
 
@@ -244,11 +252,12 @@ class TestCryptoTools:
         for cipher in ("vigenere", "playfair", "chacha20", "blowfish"):
             assert re.search(rf'data-deskripsi="{cipher}"[^>]*\bhidden\b', body)
 
-        # Keterangan kunci + jejak selalu tampil + hasil kosong.
+        # Keterangan kunci + kotak tampilkan tahapan + hasil kosong.
         assert 'id="ct-passphrase"' in body
         assert "data-kx-sandi" in body
-        assert 'name="show_steps"' not in body
-        assert "Tampilkan tahapan" not in body
+        assert 'name="show_stages"' in body
+        assert 'id="ct-show-stages"' in body
+        assert "Tampilkan tahapan" in body
         assert "Belum ada hasil" in body
         assert "data-ct-fokus" in body
         assert 'id="ct-salin"' not in body
@@ -270,6 +279,7 @@ class TestCryptoTools:
             "csrf_token": token,
             "cipher": "super", "action": "encrypt",
             "text": "A" * 300, "passphrase": "frasa-u3",
+            "show_stages": "1",
         })
         body = resp.get_data(as_text=True)
         assert resp.status_code == 200
@@ -280,6 +290,19 @@ class TestCryptoTools:
         assert "kx-stepper" in body
         assert "Tabel jejak" in body
         assert "ditampilkan 200 pertama" in body
+
+    def test_hasil_tanpa_tahapan_bila_checkbox_tidak_dicentang(self, client):
+        token = _csrf(client, "/crypto-tools")
+        resp = client.post("/crypto-tools", data={
+            "csrf_token": token,
+            "cipher": "super", "action": "encrypt",
+            "text": "Halo Tanpa Tahapan", "passphrase": "frasa-u3",
+        })
+        body = resp.get_data(as_text=True)
+        assert resp.status_code == 200
+        assert 'id="ct-hasil"' in body
+        assert "kx-ct-tahapan" not in body
+        assert "Tabel jejak" not in body
 
 
 # ── Steganography ─────────────────────────────────────────────────────────────

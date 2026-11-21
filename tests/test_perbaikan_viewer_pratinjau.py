@@ -139,8 +139,8 @@ def test_dropdown_media_tanpa_item_lihat(client):
     dropdown = re.findall(
         r'<div class="kx-media-menu-dropdown"[^>]*>(.*?)</div>', html, re.DOTALL
     )
-    # Tiap berkas tampil di "Semua" dan "Tanpa album".
-    assert len(dropdown) == 4
+    # Tiap berkas hanya tampil sekali, di bagian "Semua".
+    assert len(dropdown) == 2
     for isi in dropdown:
         assert "Lihat" not in isi
         assert "data-open-media" not in isi
@@ -148,7 +148,7 @@ def test_dropdown_media_tanpa_item_lihat(client):
         assert "Hapus" in isi
 
     # Satu tombol Lihat utama plus satu thumbnail pembuka per kartu.
-    assert html.count("data-open-media") == 8
+    assert html.count("data-open-media") == 4
 
 
 def test_pratinjau_disembunyikan_untuk_format_office(client):

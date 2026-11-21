@@ -202,6 +202,9 @@ class MSG:
     STEGO_PNG_WARNING        = "Gambar hasil disimpan sebagai PNG; menyimpan ulang sebagai JPEG akan merusak muatan."
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    CRYPTO_KEY_LABEL           = "Kunci enkripsi"
+    CRYPTO_KEY_HELP            = "Kunci untuk mengenkripsi dan mendekripsi pesan ini. Bukan kata sandi akun Anda."
+    CRYPTO_SHOW_STAGES         = "Tampilkan tahapan"
     CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_KEY_HINT = (
@@ -395,8 +398,6 @@ class MSG:
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
     # â”€â”€ Sesi I: Account Vault, Secure Notes, My Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
-    ACCOUNT_COPY_DONE         = "Tersalin. Clipboard dikosongkan otomatis setelah 30 detik."
-    ACCOUNT_COPY_FAILED       = "Gagal menyalin. Salin secara manual."
     ACCOUNT_REVEAL_LOADING    = "Memuat…"
     ACCOUNT_REVEAL_FAILED     = "Kredensial gagal ditampilkan. Muat ulang halaman lalu coba kembali."
     ACCOUNT_REVEAL_HIDDEN     = "Tampilan kredensial disembunyikan otomatis."
@@ -492,13 +493,7 @@ class MSG:
     FOLDER_LOCKED_SUFFIX      = "terkunci"
     MUSIC_TITLE               = "Audio"
     MUSIC_UPLOAD_TITLE        = "Unggah Audio"
-    MUSIC_FOLDER_SECTION      = "Folder Audio"
-    MUSIC_UNFILED_SECTION     = "Tanpa folder"
-    MUSIC_SECTION             = "Audio"
-    MUSIC_EMPTY               = "Belum ada folder audio."
-    MUSIC_UNFILED_EMPTY       = "Belum ada audio di luar folder."
     MUSIC_NO_TRACK            = "Pilih trek untuk diputar."
-    MUSIC_DELETE_CONFIRM      = "Hapus folder ini? Berkas tetap tersimpan di Tanpa folder."
     MUSIC_PREV                = "Sebelumnya"
     MUSIC_NEXT                = "Berikutnya"
     MUSIC_PLAY                = "Putar"

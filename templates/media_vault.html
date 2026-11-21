@@ -205,16 +205,16 @@
           <div id="album-empty" class="kx-empty media-empty" hidden>
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('image', 32) }}</div>
             <p class="kx-empty-title">Belum ada media di album ini</p>
-            <p class="kx-empty-text">Pindahkan media dari galeri Tanpa album.</p>
+            <p class="kx-empty-text">Pindahkan media dari daftar Semua.</p>
           </div>
         </div>
       </section>
 
-      <!-- Semua Media -->
+      <!-- Semua Media: hanya item yang tidak berada di album mana pun -->
       <section id="collection-all-section" class="kx-card" aria-labelledby="media-all-title">
         <div class="kx-card-head">
           <h2 class="kx-card-title" id="media-all-title">Semua</h2>
-          <span class="kx-badge kx-badge-ok">{{ semua|length }} aset</span>
+          <span class="kx-badge kx-badge-ok">{{ unfiled|length }} aset</span>
         </div>
         <div class="kx-card-body">
           <div class="kx-media-toolbar">
@@ -224,12 +224,12 @@
             </div>
           </div>
 
-          {% if semua %}
+          {% if unfiled %}
           <div id="all-items" class="kx-media-grid media-grid">
-            {% for f in semua %}{{ media_card(f) }}{% endfor %}
+            {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
           </div>
           {% else %}
-          <div class="kx-empty">
+          <div id="media-all-empty" class="kx-empty">
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('image', 32) }}</div>
             <p class="kx-empty-title">Belum ada media</p>
             <p class="kx-empty-text">Unggah foto atau video untuk memulai.</p>
@@ -241,28 +241,6 @@
             <p class="kx-empty-title">Media tidak ditemukan</p>
             <p class="kx-empty-text">Coba kata kunci pencarian yang lain.</p>
           </div>
-        </div>
-      </section>
-
-      <!-- Tanpa Album -->
-      <section id="collection-unfiled-section" class="kx-card" aria-labelledby="media-gallery-title">
-        <div class="kx-card-head">
-          <h2 class="kx-card-title" id="media-gallery-title">Tanpa album</h2>
-          <span class="kx-badge kx-badge-ok">{{ unfiled|length }} aset</span>
-        </div>
-        <div class="kx-card-body">
-          {% if unfiled %}
-          <div id="unfiled-grid" class="kx-media-grid media-grid">
-            {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
-          </div>
-          {% endif %}
-          {% if semua %}
-          <div id="media-unfiled-empty" class="kx-empty"{% if unfiled %} hidden{% endif %}>
-            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('image', 32) }}</div>
-            <p class="kx-empty-title">Tidak ada berkas di luar album</p>
-            <p class="kx-empty-text">Unggah foto atau video, lalu atur media ke dalam album.</p>
-          </div>
-          {% endif %}
         </div>
       </section>
     </div>
@@ -308,6 +286,13 @@
           <button type="button" id="viewer-next" class="kx-btn kx-btn-secondary kx-btn-sm" aria-label="Berikutnya">
             <span>Berikutnya</span>{{ ikon('skip-forward', 14) }}
           </button>
+        </div>
+        <div class="kx-media-viewer-rename">
+          <button type="button" id="viewer-rename" class="kx-btn kx-btn-secondary kx-btn-sm">Ganti nama berkas</button>
+          <form id="viewer-rename-form" class="kx-media-rename-form" hidden novalidate>
+            <input type="text" id="viewer-rename-input" class="kx-input" maxlength="255" required />
+            <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm">Simpan nama</button>
+          </form>
         </div>
       </div>
     </div>

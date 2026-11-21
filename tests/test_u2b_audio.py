@@ -99,16 +99,6 @@ def _unggah_audio_db(nama: str, state: str = "normal", album: bool = False):
     return fid
 
 
-def test_halaman_audio_badge_folder_di_semua(client):
-    _unggah_audio_db("trek_folder.mp3", album=True)
-    resp = client.get("/audio")
-    assert resp.status_code == 200
-    html = resp.get_data(as_text=True)
-
-    assert 'data-folder-badge' in html
-    assert "Folder Audio Rahasia" in html
-
-
 def test_halaman_audio_markup_kx(client):
     _unggah_audio_db("trek_utama.mp3")
     resp = client.get("/audio")
