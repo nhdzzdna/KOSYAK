@@ -106,3 +106,40 @@ diubah.
 - Tes terarah Media, Audio, koleksi, kerangka, dan U2e: lihat ringkasan
   pytest pada laporan sesi.
 - Suite penuh: dijalankan sekali di akhir sesi.
+
+---
+
+## F2 Account Vault
+
+### Ringkasan
+
+Penyempurnaan antarmuka Account Vault berfokus pada penghapusan tombol salin yang
+tidak aman/berlebih dan penyeragaman kontrol lihat kata sandi dengan komponen mata
+standar `KX.sandi` (`data-kx-sandi`). Alur grant autentikasi ulang `account.reveal`,
+pembersihan otomatis 15 detik, dan struktur backend/database tetap dipertahankan.
+
+### Perubahan Antarmuka dan Logika
+
+- **Pembersihan Tombol Salin**:
+  - Menghapus tombol "Salin" pada setiap baris kredensial (atribut `data-av-salin`).
+  - Menghapus tombol salin di samping username dan kata sandi pada kotak tampilan reveal (atribut `data-copy-field`).
+  - Menghapus fungsi dan penanganan event clipboard di `static/js/account_vault.js` (`salinKataSandi`, `salinKeClipboard`, timer clipboard 30 detik, serta pelacakan `niat`).
+  - Menghapus string antarmuka `ACCOUNT_COPY_DONE` dan `ACCOUNT_COPY_FAILED` dari `modules/strings.py` dan atribut `data-msg-copy-*` dari template `templates/account_vault.html`.
+- **Integrasi Toggle Mata Sandi**:
+  - Menambahkan atribut `data-kx-sandi` pada kontainer kata sandi di kotak tampilan reveal (`kx-av-sandi`) dan pada form Edit (`kx-av-edit`).
+  - Kontrol mata menggunakan generator tombol `KX.sandi` (`kx-sandi-toggle`), lengkap dengan `aria-label`, `aria-pressed`, ikon sprite tunggal (`eye` / `eye-off`), dan ring fokus keyboard yang terlihat.
+  - Memperbarui `account_vault.js` agar me-reset status toggle sandi menjadi tersamar/tersembunyi (`type="password"`, `aria-pressed="false"`, ikon `eye-off`) setiap kali detail dibuka ulang, ditutup, atau dibersihkan otomatis setelah 15 detik.
+- **Tata Letak & Jarak**:
+  - Tombol aksi baris (`.kx-av-aksi`) dan tombol aksi reveal (`.kx-av-reveal-aksi`) memiliki jarak antartombol 8px (`gap: var(--kx-space-2)`), tidak menempel.
+
+### Tes yang Dihapus atau Diubah
+
+- Diperbarui: `tests/test_u3_ui.py::TestAccountVault::test_baris_dengan_detail_edit_dan_hapus`.
+  - Ditambahkan asersi bahwa `data-av-salin`, `data-copy-field`, `data-msg-copy-done`, dan `data-msg-copy-failed` tidak ada pada halaman.
+  - Ditambahkan asersi bahwa kontainer kata sandi pada detail reveal dan form edit memiliki komponen `data-kx-sandi`.
+  - Memastikan seluruh halaman Account Vault bebas dari skrip inline maupun handler event inline.
+
+### Keterbatasan
+
+- Uji coba visual peramban (interaksi klik mata langsung di browser) dilakukan lewat pengujian DOM struktural dan unit test karena ketiadaan peramban headless GUI di lingkungan uji.
+

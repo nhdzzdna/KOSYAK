@@ -184,6 +184,14 @@ class TestAccountVault:
         # Kata sandi selalu tersamar (input password) di semua mode.
         assert body.count('type="password"') >= 3
 
+        # F2: Tanpa tombol salin di baris maupun reveal, kolom sandi reveal dan edit ber-data-kx-sandi
+        assert "data-av-salin" not in body
+        assert "data-copy-field" not in body
+        assert "data-msg-copy-done" not in body
+        assert "data-msg-copy-failed" not in body
+        assert re.search(r'data-kx-sandi[^>]*>\s*<input[^>]*data-field-password="\d+"', body)
+        assert re.search(r'data-kx-sandi[^>]*>\s*<input[^>]*id="edit-password-\d+"', body)
+
 
 # ── Secure Notes ─────────────────────────────────────────────────────────────
 
