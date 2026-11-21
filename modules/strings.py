@@ -395,8 +395,6 @@ class MSG:
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
     # â”€â”€ Sesi I: Account Vault, Secure Notes, My Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
-    ACCOUNT_COPY_DONE         = "Tersalin. Clipboard dikosongkan otomatis setelah 30 detik."
-    ACCOUNT_COPY_FAILED       = "Gagal menyalin. Salin secara manual."
     ACCOUNT_REVEAL_LOADING    = "Memuat…"
     ACCOUNT_REVEAL_FAILED     = "Kredensial gagal ditampilkan. Muat ulang halaman lalu coba kembali."
     ACCOUNT_REVEAL_HIDDEN     = "Tampilan kredensial disembunyikan otomatis."

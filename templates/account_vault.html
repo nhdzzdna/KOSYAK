@@ -7,8 +7,6 @@
 
 {% block content %}
 <div class="kx-av-page"
-     data-msg-copy-done="{{ MSG.ACCOUNT_COPY_DONE }}"
-     data-msg-copy-failed="{{ MSG.ACCOUNT_COPY_FAILED }}"
      data-msg-reveal-loading="{{ MSG.ACCOUNT_REVEAL_LOADING }}"
      data-msg-reveal-failed="{{ MSG.ACCOUNT_REVEAL_FAILED }}"
      data-msg-reveal-hidden="{{ MSG.ACCOUNT_REVEAL_HIDDEN }}"
@@ -47,9 +45,6 @@
                         data-reveal-url="{{ url_for('account.reveal', resource_id=e.id) }}">
                   {{ ikon('eye', 15) }}<span>Tampilkan</span>
                 </button>
-                <button type="button" class="kx-btn kx-btn-sm kx-btn-secondary" data-av-salin="{{ e.id }}">
-                  {{ ikon('copy', 15) }}<span>Salin</span>
-                </button>
                 <button type="button" class="kx-btn kx-btn-sm kx-btn-danger"
                         data-av-hapus="{{ e.id }}"
                         data-av-nama="{{ e.site_name }}"
@@ -65,21 +60,15 @@
                   <span class="kx-av-item-label">Username / Email</span>
                   <div class="kx-av-item-baris">
                     <span class="kx-av-nilai" data-field="username"></span>
-                    <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" data-copy-field="username">
-                      {{ ikon('copy', 14) }}<span>Salin</span>
-                    </button>
                   </div>
                 </div>
                 <div class="kx-av-item">
                   <span class="kx-av-item-label">Kata sandi</span>
                   <div class="kx-av-item-baris">
-                    <div class="kx-sandi kx-av-sandi">
+                    <div class="kx-sandi kx-av-sandi" data-kx-sandi>
                       <input type="password" class="kx-input" readonly autocomplete="off"
                              aria-label="Kata sandi" data-field-password="{{ e.id }}" />
                     </div>
-                    <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" data-copy-field="password">
-                      {{ ikon('copy', 14) }}<span>Salin</span>
-                    </button>
                   </div>
                 </div>
                 <div class="kx-av-item">
@@ -118,7 +107,7 @@
                 </div>
                 <div class="kx-field">
                   <label class="kx-label" for="edit-password-{{ e.id }}">Kata sandi</label>
-                  <div class="kx-sandi">
+                  <div class="kx-sandi" data-kx-sandi>
                     <input type="password" class="kx-input" id="edit-password-{{ e.id }}" name="password" autocomplete="new-password" required />
                   </div>
                 </div>

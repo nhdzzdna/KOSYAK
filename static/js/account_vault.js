@@ -5,15 +5,13 @@
  *
  * Data yang ditampilkan tidak pernah ada di HTML awal; isinya diambil lewat
  * POST /account-vault/reveal/<id> dengan header X-Reauth-Grant. Tampilan
- * dibersihkan dari DOM setelah 15 detik dan clipboard dikosongkan setelah
- * 30 detik sebagai upaya terbaik. Semua teks antarmuka dibaca dari atribut
+ * dibersihkan dari DOM setelah 15 detik. Semua teks antarmuka dibaca dari atribut
  * data-msg-* pada akar halaman (modules/strings.py), bukan teks JS.
  */
 (function () {
   'use strict';
 
   var TAMPIL_MS = 15000;
-  var CLIPBOARD_MS = 30000;
   var PANJANG_ACAK = 16;
   var HIMPUNAN_ACAK = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_-+=';
 
@@ -22,10 +20,6 @@
     return;
   }
 
-  // Niat aksi setelah grant terbit: 'salin' menyalin kata sandi segera
-  // setelah data tampil. Direset setiap kali modal reauth ditutup supaya
-  // tidak ada niat basi yang terbawa ke aksi berikutnya.
-  var niat = null;
   var timerTampil = new Map();
   var kataSandi = new Map();
 
@@ -74,6 +68,31 @@
     }
   }
 
+  function resetSandiToggle(kotak) {
+    if (!kotak) {
+      return;
+    }
+    var sandiWrapper = kotak.querySelector('[data-kx-sandi]');
+    if (!sandiWrapper) {
+      return;
+    }
+    var input = sandiWrapper.querySelector('input');
+    if (input) {
+      input.type = 'password';
+    }
+    var toggle = sandiWrapper.querySelector('.kx-sandi-toggle');
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.setAttribute('aria-label', 'Tampilkan kata sandi');
+      var pakai = toggle.querySelector('use');
+      if (pakai) {
+        var contoh = document.querySelector("use[href*='sprite.svg']");
+        var spriteUrl = contoh ? (contoh.getAttribute('href') || '').split('#')[0] : '/static/icons/sprite.svg';
+        pakai.setAttribute('href', spriteUrl + '#eye-off');
+      }
+    }
+  }
+
   function isiKotak(id, data) {
     var barisEl = baris(id);
     if (!barisEl) {
@@ -90,6 +109,8 @@
       sandi.type = 'password';
       sandi.value = data.password == null ? '' : String(data.password);
     }
+    var kotak = barisEl.querySelector('[data-reveal-box]');
+    resetSandiToggle(kotak);
     kataSandi.set(String(id), data.password == null ? '' : String(data.password));
   }
 
@@ -108,6 +129,7 @@
         input.value = data[nama] == null ? '' : String(data[nama]);
       }
     });
+    resetSandiToggle(form);
   }
 
   function hentikanHitung(id) {
@@ -132,6 +154,7 @@
       if (sandi) {
         sandi.value = '';
       }
+      resetSandiToggle(kotak);
       kotak.hidden = true;
     }
     var form = barisEl.querySelector('[data-edit-form]');
@@ -141,6 +164,7 @@
           el.value = '';
         }
       });
+      resetSandiToggle(form);
       form.hidden = true;
     }
     var hitung = barisEl.querySelector('[data-countdown]');
@@ -198,38 +222,7 @@
     mulaiHitung(id);
   }
 
-  function salinKeClipboard(teks) {
-    if (!teks || !navigator.clipboard) {
-      toast(pesan('copy-failed'), 'danger');
-      return;
-    }
-    navigator.clipboard.writeText(teks).then(function () {
-      toast(pesan('copy-done'), 'success');
-      window.setTimeout(function () {
-        navigator.clipboard.writeText('').catch(function () {
-          // Upaya terbaik: peramban dapat menolak penulisan tanpa fokus.
-        });
-      }, CLIPBOARD_MS);
-    }).catch(function () {
-      toast(pesan('copy-failed'), 'danger');
-    });
-  }
-
-  function salinKataSandi(id) {
-    var nilai = kataSandi.get(String(id));
-    if (nilai == null) {
-      // Belum pernah tampil: minta verifikasi ulang lewat tombol Tampilkan.
-      niat = 'salin';
-      var tombol = pemicu(id);
-      if (tombol) {
-        tombol.click();
-      }
-      return;
-    }
-    salinKeClipboard(nilai);
-  }
-
-  function ambilData(id, grant, niatGunakan) {
+  function ambilData(id, grant) {
     var tombol = pemicu(id);
     if (!tombol) {
       return;
@@ -251,9 +244,6 @@
     }).then(function (data) {
       setLabelPemicu(id, false);
       tampilkan(id, data);
-      if (niatGunakan === 'salin') {
-        salinKeClipboard(kataSandi.get(String(id)) || '');
-      }
     }).catch(function (err) {
       setLabelPemicu(id, false);
       toast(err && err.message ? err.message : pesan('reveal-failed'), 'danger');
@@ -329,30 +319,6 @@
       return;
     }
 
-    el = event.target.closest('[data-av-salin]');
-    if (el) {
-      salinKataSandi(el.getAttribute('data-av-salin'));
-      return;
-    }
-
-    el = event.target.closest('[data-copy-field]');
-    if (el) {
-      var barisSalin = el.closest('[data-entry]');
-      if (barisSalin) {
-        var idSalin = barisSalin.getAttribute('data-entry');
-        var medan = el.getAttribute('data-copy-field');
-        var sumber = '';
-        if (medan === 'password') {
-          sumber = kataSandi.get(String(idSalin)) || '';
-        } else {
-          var elMedan = barisSalin.querySelector('[data-field="' + medan + '"]');
-          sumber = elMedan ? elMedan.textContent : '';
-        }
-        salinKeClipboard(sumber);
-      }
-      return;
-    }
-
     el = event.target.closest('[data-av-hapus]');
     if (el) {
       var nama = el.getAttribute('data-av-nama') || '';
@@ -409,19 +375,8 @@
     if (detail.scope !== 'account.reveal' || !detail.resource) {
       return;
     }
-    var gunakan = niat;
-    niat = null;
-    ambilData(String(detail.resource), detail.token, gunakan);
+    ambilData(String(detail.resource), detail.token);
   });
-
-  var modalReauth = document.getElementById('reauth-modal');
-  if (modalReauth && 'MutationObserver' in window) {
-    new MutationObserver(function () {
-      if (modalReauth.style.display !== 'flex') {
-        niat = null;
-      }
-    }).observe(modalReauth, { attributes: true, attributeFilter: ['style'] });
-  }
 
   // ── Pembuat kata sandi acak ─────────────────────────────────────────
   var tombolAcak = document.getElementById('av-buat-otomatis');
