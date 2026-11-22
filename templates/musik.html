@@ -13,6 +13,7 @@
     data-kind="audio"
     data-name="{{ f.original_name }}"
     data-view-url="{{ f.view_url }}"
+    data-stream-url="{{ f.stream_url }}"
     data-locked="{{ 1 if f.state == 'locked' else 0 }}"
     data-collection-id="{{ f.collection_id or '' }}">
   <td class="kx-cell-select kx-audio-cell-select">

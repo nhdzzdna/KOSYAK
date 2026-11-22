@@ -222,11 +222,17 @@
       window.CryptixReauth.grantFor('item.view', kartu.getAttribute('data-file-id')));
   }
 
+  var blobAktif = null;
+
   function hentikanAudio() {
     if (audio) {
       audio.pause();
       audio.removeAttribute('src');
       audio.load();
+    }
+    if (blobAktif) {
+      URL.revokeObjectURL(blobAktif);
+      blobAktif = null;
     }
     if (trekAktif) {
       trekAktif.classList.remove('is-playing');
@@ -243,40 +249,57 @@
     if (!kartu) {
       return;
     }
-    if (trekAktif && trekAktif !== kartu) {
-      trekAktif.classList.remove('is-playing');
-    }
-    trekAktif = kartu;
-    kartu.classList.add('is-playing');
-
-    var url = kartu.getAttribute('data-view-url');
+    var fileId = kartu.getAttribute('data-file-id');
+    var streamUrl = kartu.getAttribute('data-stream-url') || ('/media-vault/stream/' + fileId);
     var nama = kartu.getAttribute('data-name') || 'Audio';
 
-    if (judulModal) {
-      judulModal.textContent = nama;
-    }
-
-    if (!url) {
-      return;
-    }
-
-    audio.src = url;
-    audio.load();
-
-    if (modalAudio) {
-      modalAudio.hidden = false;
-      if (window.KX && window.KX.modal && typeof window.KX.modal.buka === 'function') {
-        window.KX.modal.buka(modalAudio);
-      } else {
-        modalAudio.classList.add('is-open');
-        modalAudio.setAttribute('aria-hidden', 'false');
+    mintaGrant('audio.play', fileId).then(function (token) {
+      return apiFetch(streamUrl, {
+        method: 'GET',
+        headers: {
+          'X-Reauth-Grant': token
+        },
+        credentials: 'same-origin'
+      });
+    }).then(function (resp) {
+      if (!resp.ok) {
+        throw new Error(pesan('error') || 'Gagal memutar audio.');
       }
-    }
+      return resp.blob();
+    }).then(function (blob) {
+      hentikanAudio();
 
-    var janji = audio.play();
-    if (janji && typeof janji.catch === 'function') {
-      janji.catch(function () {});
-    }
+      if (trekAktif && trekAktif !== kartu) {
+        trekAktif.classList.remove('is-playing');
+      }
+      trekAktif = kartu;
+      kartu.classList.add('is-playing');
+
+      if (judulModal) {
+        judulModal.textContent = nama;
+      }
+
+      blobAktif = URL.createObjectURL(blob);
+      audio.src = blobAktif;
+      audio.load();
+
+      if (modalAudio) {
+        modalAudio.hidden = false;
+        if (window.KX && window.KX.modal && typeof window.KX.modal.buka === 'function') {
+          window.KX.modal.buka(modalAudio);
+        } else {
+          modalAudio.classList.add('is-open');
+          modalAudio.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      var janji = audio.play();
+      if (janji && typeof janji.catch === 'function') {
+        janji.catch(function () {});
+      }
+    }).catch(function (err) {
+      tampilkanGalat(err && err.message ? err.message : pesan('error'));
+    });
   }
 
   // Klik putar pada tabel
@@ -309,14 +332,8 @@
     if (window.MutationObserver) {
       var obs = new MutationObserver(function () {
         if (!modalAudio.classList.contains('is-open') || modalAudio.getAttribute('aria-hidden') === 'true') {
-          if (audio.src) {
-            audio.pause();
-            audio.removeAttribute('src');
-            audio.load();
-            if (trekAktif) {
-              trekAktif.classList.remove('is-playing');
-              trekAktif = null;
-            }
+          if (audio.src || blobAktif) {
+            hentikanAudio();
           }
         }
       });
