@@ -107,6 +107,7 @@ class TestHasilEkstraksiTidakBocor:
             "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
             "payload_type": "text",
             "message": rahasia,
+            "passphrase": "kunci-uji",
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
 
@@ -122,6 +123,7 @@ class TestHasilEkstraksiTidakBocor:
             data={
                 "csrf_token": token,
                 "reauth_grant": _grant(client, "stego.extract", row["id"]),
+                "passphrase": "kunci-uji",
             },
         )
         assert hasil.status_code == 200

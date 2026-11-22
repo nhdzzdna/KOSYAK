@@ -12,6 +12,7 @@ import re
 import struct
 import tempfile
 import zlib
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -31,6 +32,7 @@ from modules.steganography.lsb import (
 DEK = bytes(range(32))
 DEK_LAIN = bytes(range(1, 33))
 PASSPHRASE = "frasa-sandi-tersembunyi"
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _make_white_png(path: str, width: int = 200, height: int = 200) -> None:
@@ -162,20 +164,26 @@ class TestLSBUnit:
 
     def test_ekstrak_muatan_berkas_lama_tidak_crash(self):
         """Gambar lama bertipe berkas ditolak dengan pesan rapi, bukan crash."""
-        out = _buat_stego_berkas_lama(self.src, b"isi berkas lama", "lama.bin", self.tmpdir)
-        hasil = extract_payload(out, master_key=DEK)
+        out = _buat_stego_berkas_lama(
+            self.src, b"isi berkas lama", "lama.bin", self.tmpdir,
+            passphrase=PASSPHRASE,
+        )
+        hasil = extract_payload(out, passphrase=PASSPHRASE)
         assert hasil["success"] is False
         assert hasil["error"] == MSG.STEGO_FILE_PAYLOAD_UNSUPPORTED
-        hasil_pesan = extract_message(out, master_key=DEK)
+        hasil_pesan = extract_message(out, passphrase=PASSPHRASE)
         assert hasil_pesan["success"] is False
         assert hasil_pesan["error"] == MSG.STEGO_FILE_PAYLOAD_UNSUPPORTED
 
 
-def _buat_stego_berkas_lama(carrier_path: str, data: bytes, filename: str, tmpdir: str) -> str:
+def _buat_stego_berkas_lama(
+    carrier_path: str, data: bytes, filename: str, tmpdir: str,
+    passphrase: str | None = None,
+) -> str:
     """Buat gambar stego bertipe berkas (format lama) untuk pengujian kompatibilitas."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-    key = _stego_key(DEK, None)
+    key = _stego_key(None, passphrase)
     img = Image.open(carrier_path).convert("RGB")
     pixels = np.array(img, dtype=np.uint8)
     flat = pixels.reshape(-1)
@@ -268,6 +276,7 @@ class TestRuteStego:
             "carrier_image": (io.BytesIO(_gambar_png()), "foto.jpg"),
             "payload_type": "text",
             "message": "pesan tersembunyi",
+            "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
 
@@ -293,7 +302,84 @@ class TestRuteStego:
             )]
         assert "STEGO_EMBED" in aksi
 
+    def test_sisip_tanpa_kunci_ditolak(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "message": "pesan tanpa kunci",
+            "passphrase": "",
+        }, content_type="multipart/form-data", follow_redirects=True)
+        assert resp.status_code == 200
+        assert MSG.STEGO_PASSPHRASE_REQUIRED in resp.get_data(as_text=True)
 
+        from database.db import get_db
+        with get_db() as db:
+            jumlah = db.execute(
+                "SELECT COUNT(*) AS c FROM stego_images"
+            ).fetchone()["c"]
+        assert jumlah == 0
+
+    def test_ekstrak_gambar_tersimpan_tanpa_kunci_ditolak(self, client):
+        token = _csrf(client)
+        assert client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "message": "rahasia tersimpan",
+            "passphrase": PASSPHRASE,
+        }, content_type="multipart/form-data").status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT * FROM stego_images WHERE user_id=1"
+            ).fetchone()
+
+        token = _csrf(client)
+        hasil = client.post(f"/steganography/extract/{row['id']}", data={
+            "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract", row["id"]),
+            "passphrase": "",
+        })
+        assert hasil.status_code == 400
+        assert hasil.is_json
+        data = hasil.get_json()
+        assert data["success"] is False
+        assert data["error"] == MSG.STEGO_PASSPHRASE_REQUIRED
+        assert "rahasia tersimpan" not in hasil.get_data(as_text=True)
+
+    def test_kunci_salah_lewat_endpoint_tersimpan(self, client):
+        token = _csrf(client)
+        assert client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "message": "rahasia kunci salah",
+            "passphrase": PASSPHRASE,
+        }, content_type="multipart/form-data").status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT * FROM stego_images WHERE user_id=1"
+            ).fetchone()
+
+        token = _csrf(client)
+        hasil = client.post(f"/steganography/extract/{row['id']}", data={
+            "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract", row["id"]),
+            "passphrase": "kunci-yang-salah",
+        })
+        assert hasil.status_code == 400
+        assert hasil.is_json
+        data = hasil.get_json()
+        assert data["success"] is False
+        assert data["error"] in {
+            MSG.STEGO_TAMPERED, MSG.STEGO_DECRYPT_FAILED,
+        }
+        assert "rahasia kunci salah" not in hasil.get_data(as_text=True)
 
     def test_ekstrak_unggahan_teks_dengan_passphrase(self, client, tmp_path):
         # Sisipkan memakai passphrase kustom di luar rute.
@@ -313,19 +399,20 @@ class TestRuteStego:
         assert resp.status_code == 200
         assert "rahasia passphrase" in resp.get_data(as_text=True)
 
-        # Tanpa passphrase pun tetap terbaca bila kunci sesi tidak dipakai
-        # — gambar ini memakai passphrase, sehingga tanpa passphrase gagal.
+        # Kunci kosong ditolak lebih awal dengan JSON rapi.
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
             "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(hasil.read_bytes()), "stego.png"),
             "passphrase": "",
-        }, content_type="multipart/form-data", follow_redirects=True)
-        body = resp.get_data(as_text=True)
-        assert "rahasia passphrase" not in body
-        assert MSG.STEGO_KEY_REQUIRED.split(".")[0] in body or \
-            MSG.STEGO_TAMPERED.split(".")[0] in body
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 400
+        assert resp.is_json
+        data = resp.get_json()
+        assert data["success"] is False
+        assert data["error"] == MSG.STEGO_PASSPHRASE_REQUIRED
+        assert "rahasia passphrase" not in resp.get_data(as_text=True)
 
     def test_unggahan_bukan_gambar_stego_ditolak(self, client):
         biasa = _gambar_png(60)
@@ -334,7 +421,7 @@ class TestRuteStego:
             "csrf_token": token,
             "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(biasa), "biasa.png"),
-            "passphrase": "",
+            "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data", follow_redirects=True)
         assert MSG.STEGO_NO_MESSAGE in resp.get_data(as_text=True)
 
@@ -345,6 +432,7 @@ class TestRuteStego:
             "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
             "payload_type": "text",
             "message": "pesan json tersembunyi",
+            "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
 
@@ -358,6 +446,7 @@ class TestRuteStego:
         hasil = client.post(f"/steganography/extract/{row['id']}", data={
             "csrf_token": token,
             "reauth_grant": _grant(client, "stego.extract", row["id"]),
+            "passphrase": PASSPHRASE,
         })
         assert hasil.status_code == 200
         assert hasil.is_json
@@ -368,14 +457,14 @@ class TestRuteStego:
         assert data["encrypted"] is True
         assert hasil.headers.get("X-Cryptix-Extract") == "text"
 
-    def test_kunci_otomatis_dek_dapat_diekstrak(self, client):
+    def test_satu_kunci_teks_dipakai_ulang_lewat_rute(self, client):
         token = _csrf(client)
         resp = client.post("/steganography/embed", data={
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
             "payload_type": "text",
-            "key_mode": "account",
-            "message": "kunci akun otomatis",
+            "passphrase": PASSPHRASE,
+            "message": "kunci teks bersama",
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
 
@@ -388,9 +477,11 @@ class TestRuteStego:
         hasil = client.post(f"/steganography/extract/{row['id']}", data={
             "csrf_token": token,
             "reauth_grant": _grant(client, "stego.extract", row["id"]),
+            "passphrase": PASSPHRASE,
         })
         assert hasil.status_code == 200
-        assert hasil.get_json()["text"] == "kunci akun otomatis"
+        assert hasil.is_json
+        assert hasil.get_json()["text"] == "kunci teks bersama"
 
     def test_sisip_teks_dengan_passphrase_lalu_ekstrak(self, client):
         token = _csrf(client)
@@ -398,7 +489,6 @@ class TestRuteStego:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
             "payload_type": "text",
-            "key_mode": "passphrase",
             "passphrase": PASSPHRASE,
             "message": "pesan dengan passphrase",
         }, content_type="multipart/form-data")
@@ -445,6 +535,7 @@ class TestRuteStego:
             "carrier_image": (io.BytesIO(_gambar_png(20)), "kecil.png"),
             "payload_type": "text",
             "message": "A" * 500,
+            "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data", follow_redirects=True)
         assert resp.status_code == 200
         assert "terlalu besar" in resp.get_data(as_text=True).lower()
@@ -455,7 +546,6 @@ class TestRuteStego:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
             "payload_type": "text",
-            "key_mode": "passphrase",
             "passphrase": PASSPHRASE,
             "message": "jangan simpan passphrase",
         }, content_type="multipart/form-data")
@@ -472,19 +562,34 @@ class TestRuteStego:
         assert "oninput=" not in body
         assert "onsubmit=" not in body
         assert "<script>" not in body
-        assert 'type="password"' in body
+        assert 'type="text"' in body
+        for terlarang in ("data-sg-kunci", "key_mode", "data-kx-sandi",
+                          "STEGO_ACCOUNT_KEY_NOTE", "Kosongkan bila memakai kunci akun"):
+            assert terlarang not in body, f"{terlarang} masih ada di halaman stego"
+
+        js = (ROOT / "static" / "js" / "steganography.js").read_text(encoding="utf-8")
+        for terlarang in ("key_mode", "data-sg-kunci", "master_key", "aturKunci",
+                          "STEGO_ACCOUNT_KEY_NOTE"):
+            assert terlarang not in js, f"{terlarang} masih ada di steganography.js"
+        rute = (ROOT / "routes" / "stego_routes.py").read_text(encoding="utf-8")
+        for terlarang in ("key_mode", "data-sg-kunci", "STEGO_ACCOUNT_KEY_NOTE",
+                          "master_key="):
+            assert terlarang not in rute, f"{terlarang} masih ada di stego_routes.py"
 
     def test_ekstrak_gambar_berkas_lama_mengembalikan_error_rapi(self, client, tmp_path):
         pembawa = tmp_path / "pembawa.png"
         Image.new("RGB", (160, 160), color=(255, 255, 255)).save(pembawa, format="PNG")
-        stego_path = _buat_stego_berkas_lama(str(pembawa), b"isi lama", "lama.bin", str(tmp_path))
+        stego_path = _buat_stego_berkas_lama(
+            str(pembawa), b"isi lama", "lama.bin", str(tmp_path),
+            passphrase=PASSPHRASE,
+        )
 
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
             "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(open(stego_path, "rb").read()), "lama.png"),
-            "passphrase": "",
+            "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data")
         assert resp.status_code == 400
         assert resp.is_json

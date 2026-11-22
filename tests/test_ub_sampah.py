@@ -310,6 +310,7 @@ class TestHapusLunak:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(jalur.read_bytes()), "gambar-stego.png"),
             "message": "pesan tersembunyi",
+            "passphrase": "kunci-uji",
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
         with get_db() as db:
@@ -588,6 +589,7 @@ class TestHapusPermanen:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(jalur.read_bytes()), "gambar-stego.png"),
             "message": "pesan purge",
+            "passphrase": "kunci-uji",
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
         with get_db() as db:

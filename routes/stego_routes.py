@@ -124,16 +124,12 @@ def embed():
     # Enkripsi aktif secara default; kotak centang dikirim value "0" bila
     # dicabut pengguna.
     use_enc = request.form.get("use_encryption", "1") == "1"
-    key_mode = request.form.get("key_mode", "account")
-    if key_mode not in {"account", "passphrase"}:
-        key_mode = "account"
+    # Satu kunci teks dari pengguna; tidak ada lagi kunci akun sebagai mode
+    # alternatif. Kunci tidak pernah disimpan di sesi/cookie/log.
     passphrase = request.form.get("passphrase", "").strip()
-    if key_mode == "passphrase" and not passphrase:
+    if not passphrase:
         flash(MSG.STEGO_PASSPHRASE_REQUIRED, "warning")
         return redirect(url_for("stego.index"))
-    if key_mode != "passphrase":
-        # Passphrase tidak pernah disimpan di sesi/cookie/log.
-        passphrase = None
 
     if not carrier or not carrier.filename:
         flash(MSG.STEGO_NO_CARRIER, "warning")
@@ -156,13 +152,10 @@ def embed():
     out_path = os.path.join(config.STEGO_IMAGES_DIR, stored_name)
     os.makedirs(config.STEGO_IMAGES_DIR, exist_ok=True)
 
-    mk = _dek()
-    stego_master = mk if key_mode == "account" else None
     try:
         result = embed_message(
             tmp_in, message, out_path,
-            master_key=stego_master, passphrase=passphrase,
-            encrypt=use_enc,
+            passphrase=passphrase, encrypt=use_enc,
         )
         has_encryption = int(use_enc)
     finally:
@@ -195,6 +188,16 @@ def embed():
     return redirect(url_for("stego.index"))
 
 
+def _galat_kunci_kosong():
+    """Kunci ekstrak wajib; balas JSON rapi untuk permintaan AJAX."""
+    pesan = MSG.STEGO_PASSPHRASE_REQUIRED
+    return jsonify({
+        "success": False,
+        "error": pesan,
+        "message": MSG.STEGO_EXTRACT_FAILED.format(error=pesan),
+    }), 400
+
+
 def _hasil_ekstraksi(result: dict):
     """
     Sajikan hasil ekstrak.
@@ -223,6 +226,8 @@ def _hasil_ekstraksi(result: dict):
 @login_required
 @require_grant("stego.extract")
 def extract(img_id: int):
+    # Periksa kepemilikan sumber daya lebih dulu agar IDOR tetap ditolak 404
+    # sebelum validasi kunci menghasilkan 400.
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM stego_images WHERE id=? AND user_id=? "
@@ -233,12 +238,12 @@ def extract(img_id: int):
     if not row:
         abort(404)
 
-    img_path = os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"])
-    mk = _dek()
     passphrase = request.form.get("passphrase", "").strip()
-    result = extract_payload(
-        img_path, master_key=mk, passphrase=passphrase or None
-    )
+    if not passphrase:
+        return _galat_kunci_kosong()
+
+    img_path = os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"])
+    result = extract_payload(img_path, passphrase=passphrase)
 
     if result["success"]:
         add_block(session["user_id"], "STEGO_EXTRACT", f"stego:{img_id}",
@@ -250,7 +255,11 @@ def extract(img_id: int):
 @login_required
 @require_grant("stego.extract")
 def extract_upload():
-    """Ekstrak muatan dari gambar yang diunggah; passphrase opsional."""
+    """Ekstrak muatan dari gambar yang diunggah dengan satu kunci teks wajib."""
+    passphrase = request.form.get("passphrase", "").strip()
+    if not passphrase:
+        return _galat_kunci_kosong()
+
     carrier = request.files.get("stego_image")
     if not carrier or not carrier.filename:
         flash(MSG.STEGO_NO_CARRIER, "warning")
@@ -262,20 +271,13 @@ def extract_upload():
         flash(MSG.STEGO_INVALID_CARRIER, "danger")
         return redirect(url_for("stego.index"))
 
-    passphrase = request.form.get("passphrase", "").strip()
-    mk = _dek()
-
     os.makedirs(config.TEMPORARY_FILES_DIR, exist_ok=True)
     tmp_path = os.path.join(
         config.TEMPORARY_FILES_DIR, f"stego_up_{uuid.uuid4().hex}{ext}"
     )
     carrier.save(tmp_path)
     try:
-        result = extract_payload(
-            tmp_path,
-            master_key=mk,
-            passphrase=passphrase or None,
-        )
+        result = extract_payload(tmp_path, passphrase=passphrase)
         hash_gambar = _hash_gambar(tmp_path)
     except Exception:
         result = {"success": False, "error": MSG.STEGO_INVALID_CARRIER}

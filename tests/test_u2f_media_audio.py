@@ -165,7 +165,7 @@ def test_audio_tanpa_ui_folder(client):
     for terlarang in ("folder-create-form", "folder-detail", "data-folder-open",
                       "move-target", "move-button", "audio-unfiled-empty"):
         assert terlarang not in html
-    assert 'data-folder-badge' in html
+    assert 'data-folder-badge' not in html
     assert "collection_folders.js" not in html
     assert 'id="audio-search"' in html
     assert 'id="music-audio"' in html
@@ -188,30 +188,44 @@ def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
     assert "Terkunci" in html
 
 
-def test_audio_css_kolom_folder_dan_status():
+def test_audio_css_tanpa_gaya_kolom_folder_dan_status():
     with open("static/css/halaman/audio.css", "r", encoding="utf-8") as f:
         css = f.read()
-    assert ".kx-audio-folder-badge" in css
-    assert ".kx-col-folder" in css
-    assert ".kx-col-status" in css
+    for selektor in (".kx-audio-folder-badge", ".kx-col-folder", ".kx-col-status",
+                     ".kx-audio-th-folder", ".kx-audio-cell-folder",
+                     ".kx-audio-th-status", ".kx-audio-cell-status"):
+        assert selektor not in css, f"{selektor} masih ada di audio.css"
+    # Kolom Durasi tetap disembunyikan bersama header dan selnya.
+    assert ".kx-col-durasi" in css
+    assert ".kx-audio-th-durasi" in css
+    assert ".kx-audio-cell-durasi" in css
 
 
-def test_buat_kartu_musik_menyusun_baris_tabel_tujuh_sel():
+def test_buat_kartu_musik_menyusun_baris_tabel_lima_sel():
     with open("static/js/collection_folders.js", "r", encoding="utf-8") as f:
         js = f.read()
     blok = js.split("function buatFormMenu", 1)[1].split("function buatKartuDokumen", 1)[0]
 
     assert "document.createElement('tr')" in blok
-    assert "kx-audio-tr music-track" in blok
-    assert blok.count("document.createElement('td')") == 7
+    assert "kx-audio-tr" in blok
+    assert "music-track" not in blok
+    assert blok.count("document.createElement('td')") == 5
     for atribut in ("data-track", "data-file-id", "data-kind", "data-name",
                     "data-view-url", "data-locked", "data-collection-id",
                     "data-select-file", "data-kx-pilih", "data-track-play",
                     "data-menu-toggle", "data-menu-dropdown"):
         assert atribut in blok, f"Atribut {atribut} tidak ada pada baris hasil JS"
     for kelas in ("kx-cell-select", "kx-audio-cell-play", "kx-audio-cell-title",
-                  "music-track-name", "audio-track-meta", "kx-audio-cell-folder",
-                  "data-folder-badge", "kx-audio-cell-durasi", "kx-audio-cell-status",
-                  "kx-cell-actions", "kx-audio-cell-actions", "kx-audio-menu-wrap",
+                  "kx-audio-track-title", "kx-audio-track-meta",
+                  "kx-audio-cell-durasi", "kx-cell-actions",
+                  "kx-audio-cell-actions", "kx-audio-menu-wrap",
                   "kx-audio-menu-dropdown", "kx-audio-menu-item"):
         assert kelas in blok, f"Kelas {kelas} tidak ada pada baris hasil JS"
+    for terlarang in ("kx-audio-cell-folder", "data-folder-badge",
+                      "kx-audio-cell-status", "music-track-name",
+                      "'kx-audio-track-meta audio-track-meta'"):
+        assert terlarang not in blok, f"{terlarang} masih ada pada baris hasil JS"
+    assert "Terkunci" in blok
+    assert "IKON_KUNCI" in blok
+    # Pemindahan item tidak boleh menyentuh sel yang sudah dihapus.
+    assert ".kx-audio-cell-mono span" not in js

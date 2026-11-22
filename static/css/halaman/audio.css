@@ -77,9 +77,7 @@
 /* Lebar kolom dipusatkan di CSS agar header dan isi memakai ukuran sama. */
 .kx-col-select { width: 44px; }
 .kx-col-play { width: 48px; }
-.kx-col-folder { width: 140px; }
 .kx-col-durasi { width: 90px; }
-.kx-col-status { width: 110px; }
 .kx-col-actions { width: 52px; }
 
 .kx-audio-table th {
@@ -150,19 +148,8 @@
 }
 
 .kx-audio-cell-durasi,
-.kx-audio-th-durasi,
-.kx-audio-cell-folder,
-.kx-audio-th-folder,
-.kx-audio-cell-status,
-.kx-audio-th-status {
+.kx-audio-th-durasi {
   text-align: left;
-}
-
-.kx-audio-folder-badge {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .kx-audio-play-circle {
@@ -309,13 +296,7 @@
 @media (max-width: 640px) {
   .kx-col-durasi,
   .kx-audio-th-durasi,
-  .kx-audio-cell-durasi,
-  .kx-col-folder,
-  .kx-audio-th-folder,
-  .kx-audio-cell-folder,
-  .kx-col-status,
-  .kx-audio-th-status,
-  .kx-audio-cell-status {
+  .kx-audio-cell-durasi {
     display: none;
   }
 }

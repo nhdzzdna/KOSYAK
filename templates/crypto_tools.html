@@ -43,9 +43,8 @@
     <!-- ── Deskripsi algoritma terpilih ───────────────────────────────── -->
     <div class="kx-ct-deskripsi" id="ct-deskripsi" aria-live="polite">
       <p data-deskripsi="super">
-        Empat layer berurutan: Vigenere, Playfair, ChaCha20, Blowfish-CBC. Kunci tiap layer
-        diturunkan dari kunci rahasia dengan PBKDF2-HMAC-SHA256 bersalt. Hasil enkripsi
-        berawalan <code>CXSE2.</code>
+        Empat layer berurutan: Vigenere, Playfair, ChaCha20, Blowfish-CBC.
+        {{ MSG.CRYPTO_SUPER_KEY_HINT }} Hasil enkripsi berawalan <code>CXSE2.</code>
       </p>
       <p data-deskripsi="vigenere" hidden>
         Cipher substitusi polyalphabetik klasik pada ASCII printable (32&ndash;126). Kunci hanya
@@ -92,17 +91,16 @@
             <input type="text" class="kx-input kx-ct-kunci" id="ct-kunci" name="key"
                    autocomplete="off" readonly
                    data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
-                   placeholder="Kunci teks atau 64 digit heksadesimal" />
+                   placeholder="{{ MSG.CRYPTO_SUPER_KEY_PLACEHOLDER }}" />
             <p class="kx-ct-hint" data-hint-vigenere hidden>{{ MSG.CRYPTO_VIGENERE_KEY_HINT }}</p>
           </div>
 
           <div class="kx-field" id="ct-passphrase-field" hidden>
-            <label class="kx-label" for="ct-passphrase">{{ MSG.CRYPTO_KEY_LABEL }}</label>
-            <div class="kx-sandi" data-kx-sandi>
-              <input type="password" class="kx-input" id="ct-passphrase" name="passphrase"
-                     autocomplete="new-password" readonly
-                     data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
-            </div>
+            <label class="kx-label" for="ct-passphrase">Kunci</label>
+            <input type="text" class="kx-input kx-ct-kunci" id="ct-passphrase" name="passphrase"
+                   autocomplete="off" readonly
+                   data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
+                   placeholder="{{ MSG.CRYPTO_SUPER_KEY_PLACEHOLDER }}" />
           </div>
 
           <div class="kx-field kx-ct-stages-field">

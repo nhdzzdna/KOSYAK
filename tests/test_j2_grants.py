@@ -134,6 +134,7 @@ def _buat_stego(client) -> int:
         "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
         "payload_type": "text",
         "message": "pesan uji J2",
+        "passphrase": "kunci-uji",
     }, content_type="multipart/form-data")
     assert resp.status_code == 302
     with get_db() as db:
@@ -228,12 +229,14 @@ class TestScopeSekaliPakai:
         csrf = _csrf(client, "/steganography")
         pertama = client.post(
             f"/steganography/extract/{img_id}",
-            data={"csrf_token": csrf, "reauth_grant": token},
+            data={"csrf_token": csrf, "reauth_grant": token,
+                  "passphrase": "kunci-uji"},
         )
         assert pertama.status_code == 200
         kedua = client.post(
             f"/steganography/extract/{img_id}",
-            data={"csrf_token": csrf, "reauth_grant": token},
+            data={"csrf_token": csrf, "reauth_grant": token,
+                  "passphrase": "kunci-uji"},
         )
         assert kedua.status_code == 401
         assert kedua.get_json()["reason"] == "invalid"

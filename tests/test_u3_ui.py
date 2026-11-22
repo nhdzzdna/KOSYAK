@@ -250,8 +250,13 @@ class TestCryptoTools:
             assert re.search(rf'data-deskripsi="{cipher}"[^>]*\bhidden\b', body)
 
         # Keterangan kunci + kotak tampilkan tahapan + hasil kosong.
-        assert 'id="ct-passphrase"' in body
-        assert "data-kx-sandi" in body
+        kunci_super = re.search(r'<input[^>]*id="ct-passphrase"[^>]*>', body)
+        assert kunci_super
+        assert 'type="text"' in kunci_super.group(0)
+        assert 'name="passphrase"' in kunci_super.group(0)
+        assert '<label class="kx-label" for="ct-passphrase">Kunci</label>' in body
+        assert "data-kx-sandi" not in body
+        assert MSG.CRYPTO_SUPER_KEY_HINT in body
         assert 'name="show_stages"' in body
         assert 'id="ct-show-stages"' in body
         assert "Tampilkan tahapan" in body
@@ -316,13 +321,19 @@ class TestSteganography:
         assert re.search(r'<textarea[^>]*name="message"[^>]*id="sg-pesan"[^>]*required', body)
         assert 'id="sg-teks-field"' in body
 
-        # Pilihan kunci muatan tetap ada.
-        assert 'data-sg-kunci="account"' in body
-        assert 'data-sg-kunci="passphrase"' in body
-        assert 'name="key_mode" id="sg-kunci-mode" value="account"' in body
-
-        # Kolom kunci rahasia tersembunyi.
-        assert re.search(r'id="sg-kunci-rahasia-field"[^>]*\bhidden\b', body)
+        # Satu kunci teks biasa, selalu tampil dan wajib diisi.
+        for terlarang in ("data-sg-kunci", "key_mode", "data-kx-sandi",
+                          "sg-kunci-rahasia-field", "Kosongkan bila memakai kunci akun"):
+            assert terlarang not in body, f"{terlarang} masih ada di halaman stego"
+        kunci = re.search(r'<input[^>]*name="passphrase"[^>]*id="sg-passphrase"[^>]*>', body)
+        assert kunci
+        assert 'type="text"' in kunci.group(0)
+        for atribut in ('autocomplete="off"', 'data-lpignore="true"',
+                        'data-1p-ignore', 'data-bwignore',
+                        'data-form-type="other"', 'required'):
+            assert atribut in kunci.group(0)
+        assert MSG.STEGO_KEY_NOT_STORED in body
+        assert MSG.STEGO_KEY_HINT in body
 
         # Indikator kapasitas + peringatan PNG + detail teknis.
         assert 'id="sg-kapasitas"' in body
@@ -331,7 +342,12 @@ class TestSteganography:
         assert "CRXS" in body
         assert re.search(r'<details[^>]*kx-sg-teknis', body)
 
-        # Kartu ekstrak: unggahan + kunci opsional + grant.
+        # Kartu ekstrak: unggahan + kunci wajib + grant.
+        ekstrak = re.search(
+            r'<input[^>]*name="passphrase"[^>]*id="sg-ekstrak-passphrase"[^>]*>', body
+        )
+        assert ekstrak and 'type="text"' in ekstrak.group(0)
+        assert 'required' in ekstrak.group(0)
         assert 'action="/steganography/extract-upload"' in body
         assert 'data-stego-upload="1"' in body
         assert 'id="sg-ekstrak-btn"' in body
@@ -362,7 +378,7 @@ class TestSteganography:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
             "message": "rahasia u3",
-            "key_mode": "account",
+            "passphrase": "kunci-u3",
             "use_encryption": "1",
         }, content_type="multipart/form-data", follow_redirects=False)
         assert resp.status_code == 302
@@ -387,8 +403,14 @@ class TestSteganography:
         assert sorted(identitas) == [
             "sg-ekstrak-passphrase", "sg-modal-passphrase", "sg-passphrase",
         ]
+        for id_input in ("sg-passphrase", "sg-ekstrak-passphrase", "sg-modal-passphrase"):
+            tag = re.search(r'<input[^>]*id="' + id_input + r'"[^>]*>', body)
+            assert tag, f"Input {id_input} tidak ditemukan"
+            for atribut in ('type="text"', 'autocomplete="off"', 'data-lpignore="true"',
+                            'data-1p-ignore', 'data-bwignore',
+                            'data-form-type="other"', 'required'):
+                assert atribut in tag.group(0), f"{atribut} tidak ada pada {id_input}"
         assert 'id="sg-modal-ekstrak"' in body
-        assert 'id="sg-modal-passphrase"' in body
         assert "data-sg-tutup-modal" in body
 
     def test_halaman_tanpa_payload_berkas(self, client):
@@ -407,7 +429,7 @@ class TestSteganography:
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
             "payload_type": "text",
             "message": "tanpa kolom",
-            "key_mode": "account",
+            "passphrase": "kunci-u3",
         }, content_type="multipart/form-data", follow_redirects=False)
         assert resp.status_code == 302
         with get_db() as db:
@@ -416,13 +438,12 @@ class TestSteganography:
             ).fetchall()
         assert baris and all(r["has_encryption"] == 1 for r in baris)
 
-    def test_passphrase_wajib_bila_kunci_rahasia(self, client):
+    def test_kunci_wajib_saat_embed(self, client):
         token = _csrf(client, "/steganography")
         resp = client.post("/steganography/embed", data={
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
             "message": "pesan",
-            "key_mode": "passphrase",
             "passphrase": "",
         }, content_type="multipart/form-data", follow_redirects=True)
         body = resp.get_data(as_text=True)
@@ -435,6 +456,7 @@ class TestSteganography:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(_png_bytes()), "pembawa.png"),
             "payload_type": "file",
+            "passphrase": "kunci-u3",
         }, content_type="multipart/form-data", follow_redirects=True)
         body = resp.get_data(as_text=True)
         assert resp.status_code == 200

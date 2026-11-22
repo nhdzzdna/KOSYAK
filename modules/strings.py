@@ -202,8 +202,10 @@ class MSG:
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     CRYPTO_KEY_LABEL           = "Kunci enkripsi"
+    CRYPTO_SUPER_KEY_HINT      = "Kunci ini dipakai untuk seluruh tahapan Super Encryption dan tidak disimpan."
+    CRYPTO_SUPER_KEY_PLACEHOLDER = "Kunci teks atau 64 digit heksadesimal"
     CRYPTO_SHOW_STAGES         = "Tampilkan tahapan"
-    CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
+    CRYPTO_PASSPHRASE_REQUIRED = "Isi kunci untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
@@ -387,11 +389,11 @@ class MSG:
     MEDIA_DOWNLOAD_ONLY      = "Hanya unduh â€” format ini mungkin tidak dapat diputar di browser."
     MEDIA_TEMP_WARNING       = "Winamp memerlukan berkas plaintext sementara di disk. Berkas dihapus otomatis setelah 60 detik dengan penimpaan nol sebagai upaya terbaik; penghapusan permanen tidak dapat dijamin pada SSD atau media penyimpanan modern."
     MEDIA_RANGE_INVALID      = "Rentang byte tidak valid."
-    STEGO_PASSPHRASE_REQUIRED = "Kunci rahasia wajib diisi bila dipilih sebagai kunci muatan."
+    STEGO_PASSPHRASE_REQUIRED = "Kunci wajib diisi."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     # ── U3: antarmuka Steganography ─────────────────────────────────────
-    STEGO_ACCOUNT_KEY_NOTE   = "Memakai kunci akun Anda."
-    STEGO_KEY_NOT_STORED     = "Kunci rahasia tidak disimpan di sesi, cookie, atau log."
+    STEGO_KEY_NOT_STORED     = "Kunci tidak disimpan di sesi, cookie, atau log."
+    STEGO_KEY_HINT           = "Gunakan kunci yang sama untuk menyisipkan dan mengekstrak."
     STEGO_CAPACITY_INITIAL   = "Pilih gambar pembawa untuk melihat kapasitas."
     STEGO_CAPACITY_FMT       = "Terpakai {terpakai} dari {kapasitas}."
     STEGO_CAPACITY_LEFT      = "Sisa {sisa}."
