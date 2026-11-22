@@ -218,6 +218,7 @@ def edit(resource_id: int):
 @account_bp.route("/account-vault/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
+@require_grant("item.delete")
 def delete(resource_id: int):
     """Pindahkan kredensial ke Sampah (soft delete); purge di /sampah."""
     with get_db() as db:

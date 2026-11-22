@@ -319,32 +319,6 @@
       return;
     }
 
-    el = event.target.closest('[data-av-hapus]');
-    if (el) {
-      var nama = el.getAttribute('data-av-nama') || '';
-      var urlHapus = el.getAttribute('data-av-url') || '';
-      var formHapus = document.getElementById('av-hapus-form');
-      if (!window.KX || typeof KX.konfirmasiHapus !== 'function') {
-        if (formHapus && urlHapus) {
-          formHapus.action = urlHapus;
-          formHapus.submit();
-        }
-        return;
-      }
-      KX.konfirmasiHapus({
-        judul: pesan('delete-title'),
-        nama: nama,
-        pesan: pesan('delete-message'),
-        onKonfirmasi: function () {
-          if (formHapus && urlHapus) {
-            formHapus.action = urlHapus;
-            formHapus.submit();
-          }
-        }
-      });
-      return;
-    }
-
     el = event.target.closest('[data-av-fokus]');
     if (el) {
       var tujuan = document.getElementById('av-add-site');

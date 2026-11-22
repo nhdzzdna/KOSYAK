@@ -74,7 +74,8 @@
           </form>
           <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="kx-media-menu-item is-danger">
+            <button type="submit" class="kx-media-menu-item is-danger"
+                    data-reauth="item.delete" data-reauth-resource="{{ f.id }}">
               {{ ikon('trash', 14) }}<span>Hapus</span>
             </button>
           </form>

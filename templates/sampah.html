@@ -70,7 +70,7 @@
     <form method="POST" action="{{ url_for('trash.pulihkan') }}" class="trash-form" id="trash-restore-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="items" id="trash-items-restore" value="[]" />
-      <button type="submit" id="trash-restore-button" data-trash-select disabled>
+      <button type="submit" id="trash-restore-button" data-trash-select data-reauth="trash.restore" disabled>
         <span>{{ MSG.TRASH_RESTORE_BUTTON }}</span>
       </button>
     </form>

@@ -72,7 +72,8 @@
               </form>
               <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm" aria-label="Hapus">
+                <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm" aria-label="Hapus"
+                        data-reauth="item.delete" data-reauth-resource="{{ f.id }}">
                   {{ ikon('trash', 15) }}
                 </button>
               </form>

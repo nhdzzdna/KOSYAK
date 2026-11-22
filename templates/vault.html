@@ -74,7 +74,9 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm doc-action"
               aria-label="{{ msg.delete_file }}"
-              title="{{ msg.delete_file }}">
+              title="{{ msg.delete_file }}"
+              data-reauth="item.delete"
+              data-reauth-resource="{{ f.id }}">
         {{ ikon('trash', 15) }}<span>{{ msg.delete_file }}</span>
       </button>
     </form>

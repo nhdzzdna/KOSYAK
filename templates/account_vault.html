@@ -45,12 +45,15 @@
                         data-reveal-url="{{ url_for('account.reveal', resource_id=e.id) }}">
                   {{ ikon('eye', 15) }}<span>Tampilkan</span>
                 </button>
-                <button type="button" class="kx-btn kx-btn-sm kx-btn-danger"
-                        data-av-hapus="{{ e.id }}"
-                        data-av-nama="{{ e.site_name }}"
-                        data-av-url="{{ url_for('account.delete', resource_id=e.id) }}">
-                  {{ ikon('trash', 15) }}<span>Hapus</span>
-                </button>
+                <form method="POST" action="{{ url_for('account.delete', resource_id=e.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button type="submit" class="kx-btn kx-btn-sm kx-btn-danger"
+                          data-reauth="item.delete"
+                          data-reauth-resource="{{ e.id }}"
+                          data-av-nama="{{ e.site_name }}">
+                    {{ ikon('trash', 15) }}<span>Hapus</span>
+                  </button>
+                </form>
               </div>
             </div>
 

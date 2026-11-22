@@ -432,39 +432,6 @@
     semuaMenu.forEach(function (d) { d.hidden = true; });
   });
 
-  // Hapus via KX.konfirmasiHapus
-  document.addEventListener('submit', function (event) {
-    var form = event.target;
-    if (!form || !form.action || form.action.indexOf('/vault/delete/') === -1) {
-      return;
-    }
-    if (form.getAttribute('data-kx-confirmed') === '1') {
-      return;
-    }
-
-    event.preventDefault();
-    var baris = form.closest('[data-track]');
-    var namaItem = baris ? baris.getAttribute('data-name') : 'trek audio ini';
-
-    if (window.KX && typeof window.KX.konfirmasiHapus === 'function') {
-      window.KX.konfirmasiHapus({
-        judul: 'Pindahkan ke Sampah?',
-        nama: namaItem,
-        pesan: 'Trek {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana.',
-        labelTombol: 'Pindahkan',
-        onKonfirmasi: function () {
-          form.setAttribute('data-kx-confirmed', '1');
-          form.submit();
-        }
-      });
-    } else {
-      if (window.confirm('Pindahkan ' + namaItem + ' ke Sampah?')) {
-        form.setAttribute('data-kx-confirmed', '1');
-        form.submit();
-      }
-    }
-  });
-
   // Sinkronisasi checkbox data-kx-pilih
   function sinkronPilihan() {
     document.querySelectorAll('[data-select-file]').forEach(function (cb) {

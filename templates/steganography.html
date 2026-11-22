@@ -213,11 +213,16 @@
                        data-reauth="stego.download" data-reauth-resource="{{ img.id }}">
                       {{ ikon('download', 15) }}<span>Unduh</span>
                     </a>
-                    <button type="button" class="kx-sg-menu-item kx-sg-menu-item-danger"
-                            role="menuitem" data-sg-hapus
-                            aria-label="Hapus {{ img.original_name }}">
-                      {{ ikon('trash', 15) }}<span>Hapus</span>
-                    </button>
+                    <form method="POST" action="{{ url_for('stego.delete', img_id=img.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                      <button type="submit" class="kx-sg-menu-item kx-sg-menu-item-danger"
+                              role="menuitem"
+                              data-reauth="item.delete"
+                              data-reauth-resource="{{ img.id }}"
+                              aria-label="Hapus {{ img.original_name }}">
+                        {{ ikon('trash', 15) }}<span>Hapus</span>
+                      </button>
+                    </form>
                   </div>
                 </div>
               </td>

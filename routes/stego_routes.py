@@ -315,6 +315,7 @@ def download(img_id: int):
 
 @stego_bp.route("/steganography/delete/<int:img_id>", methods=["POST"])
 @login_required
+@require_grant("item.delete")
 def delete(img_id: int):
     """Pindahkan gambar stego ke Sampah (soft delete); purge di /sampah."""
     with get_db() as db:

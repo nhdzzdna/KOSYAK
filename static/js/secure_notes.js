@@ -161,37 +161,4 @@
       }
     });
   }
-
-  // ── Hapus via KX.konfirmasiHapus ─────────────────────────────────────────
-  document.addEventListener('submit', function (event) {
-    var form = event.target;
-    if (!form || !form.action || form.action.indexOf('/secure-notes/delete/') === -1) {
-      return;
-    }
-    if (form.getAttribute('data-kx-confirmed') === '1') {
-      return;
-    }
-
-    event.preventDefault();
-    var baris = form.closest('[data-sn-item]');
-    var namaCatatan = baris ? baris.getAttribute('data-sn-judul') : 'catatan ini';
-
-    if (window.KX && typeof window.KX.konfirmasiHapus === 'function') {
-      window.KX.konfirmasiHapus({
-        judul: 'Pindahkan ke Sampah?',
-        nama: namaCatatan,
-        pesan: '{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana.',
-        labelTombol: 'Pindahkan',
-        onKonfirmasi: function () {
-          form.setAttribute('data-kx-confirmed', '1');
-          form.submit();
-        }
-      });
-    } else {
-      if (window.confirm('Pindahkan ' + namaCatatan + ' ke Sampah?')) {
-        form.setAttribute('data-kx-confirmed', '1');
-        form.submit();
-      }
-    }
-  });
 })();

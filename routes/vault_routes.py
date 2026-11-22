@@ -282,6 +282,7 @@ def decrypt(resource_id: int):
 @vault_bp.route("/vault/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
+@require_grant("item.delete")
 def delete(resource_id: int):
     """Pindahkan berkas ke Sampah (soft delete); purge dilakukan di /sampah."""
     with get_db() as db:

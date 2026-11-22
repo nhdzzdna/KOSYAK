@@ -140,8 +140,8 @@
     }
   });
 
-  // ── 3. Aksi Pulihkan (Ajax / JSON dengan Toast) ──
-  function eksekusiPulihkan(items) {
+  // ── 3. Aksi Pulihkan (Ajax / JSON dengan Toast & Grant) ──
+  function eksekusiPulihkan(items, grantToken) {
     if (!items || !items.length) {
       if (window.KX && window.KX.toast) {
         window.KX.toast(pesan('select-required', 'Pilih minimal satu item.'), 'error');
@@ -155,13 +155,18 @@
       })
     };
 
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest'
+    };
+    if (grantToken) {
+      headers['X-Reauth-Grant'] = grantToken;
+    }
+
     fetch('/api/sampah/pulihkan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
+      headers: headers,
       body: JSON.stringify(payload)
     })
       .then(function (res) {
@@ -198,7 +203,7 @@
       var id = parseInt(btn.getAttribute('data-id'), 10);
       var jenis = btn.getAttribute('data-jenis');
       var nama = btn.getAttribute('data-nama') || '';
-      eksekusiPulihkan([{ id: id, jenis: jenis, nama: nama }]);
+      mintaGrant('restore', [{ id: id, jenis: jenis, nama: nama }], 'trash.restore');
     }
   });
 
@@ -206,19 +211,26 @@
   var bulkRestoreBtn = document.getElementById('trash-bulk-restore');
   if (bulkRestoreBtn) {
     bulkRestoreBtn.addEventListener('click', function () {
-      eksekusiPulihkan(itemTerpilih());
+      var terpilih = itemTerpilih();
+      if (!terpilih.length) {
+        if (window.KX && window.KX.toast) {
+          window.KX.toast(pesan('select-required', 'Pilih minimal satu item.'), 'error');
+        }
+        return;
+      }
+      mintaGrant('restore', terpilih, 'trash.restore');
     });
   }
 
   // ── 4. Alur Grant Hapus Permanen & Kosongkan Sampah ──
-  var aksiTertunda = null; // { tipe: 'purge'|'empty', items: [...] }
+  var aksiTertunda = null; // { tipe: 'purge'|'empty'|'restore', items: [...] }
 
-  function mintaGrant(aksi, items) {
+  function mintaGrant(aksi, items, scope) {
     aksiTertunda = { tipe: aksi, items: items || [] };
-    // Memicu modal reauth dengan scope trash.purge
+    // Memicu modal reauth dengan scope yang sesuai
     var dummyBtn = document.createElement('button');
     dummyBtn.type = 'button';
-    dummyBtn.setAttribute('data-reauth', 'trash.purge');
+    dummyBtn.setAttribute('data-reauth', scope || 'trash.purge');
     dummyBtn.hidden = true;
     document.body.appendChild(dummyBtn);
     dummyBtn.click();
@@ -382,13 +394,28 @@
   // ── 5. Penerima Grant Token dari reauth.js ──
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var detail = event.detail || {};
-    if (detail.scope !== 'trash.purge') {
+    if (detail.scope !== 'trash.purge' && detail.scope !== 'trash.restore') {
       return;
     }
 
     if (!aksiTertunda) {
       // Jika dipicu secara tradisional lewat form button
       var terpilih = itemTerpilih();
+      if (detail.scope === 'trash.restore') {
+        if (isiPulih) isiPulih.value = JSON.stringify(terpilih);
+        if (formPulih) {
+          var grantInputP = formPulih.querySelector('input[name="reauth_grant"]');
+          if (!grantInputP) {
+            grantInputP = document.createElement('input');
+            grantInputP.type = 'hidden';
+            grantInputP.name = 'reauth_grant';
+            formPulih.appendChild(grantInputP);
+          }
+          grantInputP.value = detail.token || '';
+          formPulih.submit();
+        }
+        return;
+      }
       if (isiPurge) isiPurge.value = JSON.stringify(terpilih);
       if (formHapus) {
         var grantInput = formHapus.querySelector('input[name="reauth_grant"]');
@@ -407,7 +434,9 @@
     var intent = aksiTertunda;
     aksiTertunda = null;
 
-    if (intent.tipe === 'purge') {
+    if (intent.tipe === 'restore') {
+      eksekusiPulihkan(intent.items, detail.token || '');
+    } else if (intent.tipe === 'purge') {
       eksekusiPurge(intent.items, detail.token || '');
     } else if (intent.tipe === 'empty') {
       eksekusiEmpty(detail.token || '');
