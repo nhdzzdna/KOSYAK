@@ -96,4 +96,23 @@ Sesi ini menyelesaikan lima bagian perbaikan terpadu (Bagian A sampai E) pada br
    - `test_kontrak_selektor_secure_notes_js`: Menguji bahwa seluruh selektor JS ada pada template dan kontainer detail tidak memiliki `display: none !important`.
    - `test_kontrak_pemetaan_label_verifikasi`: Menguji kamus label verifikasi bebas nama scope bertitik dan kata terlarang.
    - `test_kontrak_modal_reauth_tanpa_nama_scope_mentah`: Menguji bahwa render modal reauth tidak membocorkan nama scope mentah.
+   - `test_kontrak_audio_tanpa_kelas_lama`: Menguji bahwa berkas template dan HTML halaman `/audio` tidak memuat kelas lama `music-track`, `music-track-play`, `music-track-name`, atau `audio-track-meta`.
+   - `test_kontrak_audio_table_wrap_overflow_visible`: Menguji bahwa `static/css/halaman/audio.css` memuat aturan `overflow: visible` untuk `.kx-audio-table-wrap`.
+
+---
+
+## I1: Perbaikan Tabel Audio (Penghapusan Kelas Lama)
+
+- **Akar Masalah**:
+  Elemen baris `<tr>` pada `templates/musik.html` masih membawa kelas lama `music-track`, dan elemen tombol/teks masih membawa `music-track-play`, `music-track-name`, dan `audio-track-meta`.
+  Di `static/css/style.css`, terdapat aturan selektor `.audio-page .music-track` (`display: flex`, `padding: 12px 14px`, `border: 1px`, `border-radius`, `background`) yang memiliki spesifisitas lebih tinggi dibanding `.kx-audio-tr`. Akibatnya:
+  1. Baris `<tr>` dipaksa menjadi kontainer flex (bukan baris tabel `display: table-row`), sehingga sel `<td>` mengabaikan panduan lebar `<colgroup>` dan kolom tabel tidak sejajar dengan `<th>`.
+  2. Pembungkus `.kx-table-wrap` dengan `overflow-x: auto` memotong popup menu dropdown aksi (⋯) pada baris trek.
+- **Perbaikan**:
+  1. Menghapus seluruh kelas lama (`music-track` pada `<tr>`, `music-track-play` pada `<button>`, `music-track-name` pada judul, dan `audio-track-meta` pada ekstensi) dari macro `track_row` di `templates/musik.html`.
+  2. Menambahkan kelas spesifik pada pembungkus tabel: `<div class="kx-table-wrap kx-audio-table-wrap">`.
+  3. Menambahkan aturan CSS di `static/css/halaman/audio.css`: `.kx-card-body > .kx-table-wrap.kx-audio-table-wrap { overflow: visible; }` agar menu aksi tidak terpotong.
+  4. Menghapus selektor `.music-track-name` pada penangan event klik tabel di `static/js/musik.js` (`closest('[data-track-play], .kx-audio-track-title')`).
+  5. Menambahkan tes kontrak di `tests/test_u2g_kontrak.py` untuk menguji ketiadaan kelas lama pada `/audio` dan keberadaan aturan `overflow: visible` pada `audio.css`.
+
 

@@ -533,3 +533,52 @@ def test_kontrak_modal_reauth_tanpa_nama_scope_mentah(client):
     assert "pada sumber daya" not in body
     assert 'Tindakan "' not in body
 
+
+def _tambah_file_audio(user_id=1, nama="trek_uji.mp3"):
+    from database.db import get_db
+    from modules.cryptography.key_management import purpose_key
+    from modules.cryptography.database_encryption import encrypt_field, field_aad
+
+    db_key = purpose_key(bytes(range(32)), "database")
+    nama_enc = encrypt_field(nama, db_key, field_aad(user_id, "vault_files", "original_name"))
+    with get_db() as db:
+        cur = db.execute(
+            """INSERT INTO vault_files
+               (user_id, original_name, stored_name, file_type, file_size, sha256_hash, sha256_ciphertext)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, nama_enc, "stored_audio.enc", "audio", 1024, "a" * 64, "b" * 64),
+        )
+        fid = cur.lastrowid
+        db.commit()
+    return fid
+
+
+def test_kontrak_audio_tanpa_kelas_lama(client):
+    """HTML halaman /audio dan templates/musik.html tidak memuat kelas lama music-track, music-track-play, music-track-name, atau audio-track-meta."""
+    # 1. Cek langsung di templates/musik.html
+    html_raw = (AKAR / "templates" / "musik.html").read_text(encoding="utf-8")
+    assert not re.search(r'\bmusic-track\b', html_raw), "Kelas lama 'music-track' masih ditemukan di templates/musik.html"
+    assert not re.search(r'\bmusic-track-play\b', html_raw), "Kelas lama 'music-track-play' masih ditemukan di templates/musik.html"
+    assert not re.search(r'\bmusic-track-name\b', html_raw), "Kelas lama 'music-track-name' masih ditemukan di templates/musik.html"
+    assert not re.search(r'(?<!kx-)audio-track-meta\b', html_raw), "Kelas lama 'audio-track-meta' masih ditemukan di templates/musik.html"
+
+    # 2. Render dengan trek audio di database
+    _tambah_file_audio(user_id=1)
+    resp = client.get("/audio")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert not re.search(r'\bmusic-track\b', html), "Kelas lama 'music-track' masih ditemukan di HTML render /audio"
+    assert not re.search(r'\bmusic-track-play\b', html), "Kelas lama 'music-track-play' masih ditemukan di HTML render /audio"
+    assert not re.search(r'\bmusic-track-name\b', html), "Kelas lama 'music-track-name' masih ditemukan di HTML render /audio"
+    assert not re.search(r'(?<!kx-)audio-track-meta\b', html), "Kelas lama 'audio-track-meta' masih ditemukan di HTML render /audio"
+    assert "kx-audio-table-wrap" in html
+
+
+def test_kontrak_audio_table_wrap_overflow_visible():
+    """audio.css memuat aturan overflow: visible untuk .kx-audio-table-wrap."""
+    css_path = AKAR / "static" / "css" / "halaman" / "audio.css"
+    konten_css = css_path.read_text(encoding="utf-8")
+    pola = re.compile(r"\.kx-card-body\s*>\s*\.kx-table-wrap\.kx-audio-table-wrap\s*\{[^}]*overflow\s*:\s*visible", re.DOTALL)
+    assert pola.search(konten_css), "audio.css harus memuat aturan overflow: visible untuk .kx-audio-table-wrap"
+
+

@@ -117,7 +117,8 @@ def test_halaman_audio_markup_kx(client):
     assert 'audio-file-input' in html
 
     # 4. Tabel kx-table & baris audio kx-audio-tr
-    assert 'class="kx-table-wrap"' in html
+    assert 'kx-table-wrap' in html
+    assert 'kx-audio-table-wrap' in html
     assert 'kx-audio-table' in html
     assert 'kx-audio-play-circle' in html
     assert 'trek_utama.mp3' in html

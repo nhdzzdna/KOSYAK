@@ -64,6 +64,10 @@
   background: var(--kx-surface);
 }
 
+.kx-card-body > .kx-table-wrap.kx-audio-table-wrap {
+  overflow: visible;
+}
+
 .kx-audio-table {
   width: 100%;
   table-layout: fixed;
