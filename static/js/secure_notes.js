@@ -35,17 +35,35 @@
   }
 
   function mintaGrant(scope, resource) {
-    if (window.CryptixLock && typeof window.CryptixLock.mintaGrant === 'function') {
-      return window.CryptixLock.mintaGrant(scope, resource);
-    }
-    var token = grantUntuk(scope, resource);
-    if (token) {
-      return Promise.resolve(token);
-    }
-    return Promise.reject(new Error('Autentikasi ulang diperlukan.'));
+    return new Promise(function (selesai, tolak) {
+      var penangan = function (event) {
+        var detail = event.detail || {};
+        if (detail.scope !== scope || String(detail.resource || '') !== String(resource || '')) {
+          return;
+        }
+        document.removeEventListener('cryptix:reauth-grant', penangan);
+        var token = detail.token || detail.grant;
+        if (token) {
+          selesai(token);
+        } else {
+          tolak(new Error('Catatan tidak dapat dibuka.'));
+        }
+      };
+      document.addEventListener('cryptix:reauth-grant', penangan);
+
+      var pemicu = document.createElement('button');
+      pemicu.type = 'button';
+      pemicu.hidden = true;
+      pemicu.setAttribute('data-reauth', scope);
+      pemicu.setAttribute('data-reauth-resource', String(resource || ''));
+      document.body.appendChild(pemicu);
+      pemicu.click();
+      document.body.removeChild(pemicu);
+    });
   }
 
   function bukaCatatan(baris, grant) {
+    if (!baris) return;
     var id = baris.getAttribute('data-sn-item');
     var tombolBuka = baris.querySelector('[data-sn-buka]');
     var openUrl = tombolBuka ? tombolBuka.getAttribute('data-sn-open-url') : ('/secure-notes/open/' + id);
@@ -62,7 +80,7 @@
     }).then(function (resp) {
       return resp.json().catch(function () { return {}; }).then(function (data) {
         if (!resp.ok || !data.success) {
-          throw new Error(data.error || 'Catatan gagal dibuka.');
+          throw new Error('Catatan tidak dapat dibuka.');
         }
         return data;
       });
@@ -85,7 +103,7 @@
         inputIsi.focus();
       }
     }).catch(function (err) {
-      toast(err && err.message ? err.message : 'Catatan gagal dibuka.', 'danger');
+      toast('Catatan tidak dapat dibuka.', 'danger');
     });
   }
 
@@ -137,7 +155,7 @@
     if (detail.scope === 'note.open' && detail.resource) {
       var baris = document.querySelector('[data-sn-item="' + detail.resource + '"]');
       if (baris) {
-        bukaCatatan(baris, detail.grant);
+        bukaCatatan(baris, detail.token || detail.grant);
       }
     }
   });

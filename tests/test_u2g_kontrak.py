@@ -204,9 +204,12 @@ def _tambah_note(user_id=1):
     from database.db import get_db
     from modules.cryptography.key_management import purpose_key
     from modules.cryptography.database_encryption import encrypt_field, field_aad
-    db_key = purpose_key(bytes(range(32)), "database")
+    from modules.cryptography.super_encryption import super_encrypt
+    dek = bytes(range(32))
+    db_key = purpose_key(dek, "database")
     t = encrypt_field("Catatan", db_key, field_aad(user_id, "secure_notes", "title_enc"))
-    c = encrypt_field("Isi", db_key, field_aad(user_id, "secure_notes", "content_enc"))
+    isi_super = super_encrypt("Isi", master_key=dek)
+    c = encrypt_field(isi_super, db_key, field_aad(user_id, "secure_notes", "content_enc"))
     with get_db() as db:
         cur = db.execute(
             "INSERT INTO secure_notes (user_id, title_enc, content_enc) VALUES (?, ?, ?)",
@@ -429,4 +432,70 @@ def test_kontrak_audio_play_grant_sekali_pakai(client):
     t_ada = _grant(client, "audio.play", 99999)
     resp = client.get(f"/media-vault/stream/{99999}", headers={"X-Reauth-Grant": t_ada})
     assert resp.status_code == 404
+
+
+def test_server_buka_catatan_dengan_grant(client):
+    """(a) Server: buka catatan dengan note.open kembalikan isi, tanpa grant 401, scope salah 403."""
+    nid = _tambah_note(user_id=1)
+    csrf = _csrf(client)
+
+    # 1. Tanpa grant -> 401
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf},
+    )
+    assert resp.status_code == 401
+    assert resp.get_json()["reason"] == "missing"
+
+    # 2. Scope salah -> 403
+    t_salah = _grant(client, "doc.preview", nid)
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf, "X-Reauth-Grant": t_salah},
+    )
+    assert resp.status_code == 403
+    assert resp.get_json()["reason"] == "scope"
+
+    # 3. Grant benar -> 200 dengan judul dan isi terdekripsi
+    t_benar = _grant(client, "note.open", nid)
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf, "X-Reauth-Grant": t_benar},
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["title"] == "Catatan"
+    assert data["content"] == "Isi"
+
+
+def test_kontrak_selektor_secure_notes_js(client):
+    """(b) Kontrak: setiap id & data-* yang dirujuk secure_notes.js ada di template; (c) detail tidak hidden permanen."""
+    _tambah_note(user_id=1)
+    resp = client.get("/secure-notes")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+
+    # Memeriksa elemen dan selektor utama yang dirujuk secure_notes.js
+    selektor_wajib = [
+        "kx-sn-page",
+        'id="sn-cari"',
+        'id="sn-tak-cocok"',
+        'id="sn-daftar"',
+        "data-sn-item",
+        "data-sn-judul",
+        "data-sn-buka",
+        "data-sn-open-url",
+        "data-sn-detail",
+        "data-sn-tutup",
+        'name="title"',
+        'name="content"',
+    ]
+    for sel in selektor_wajib:
+        assert sel in body, f"Selektor {sel} yang dirujuk secure_notes.js tidak ditemukan di HTML secure_notes"
+
+    # Wadah detail catatan menggunakan atribut 'hidden' standar HTML, bukan inline display:none !important
+    pola_detail = re.search(r'<div\s+class="kx-sn-detail"\s+data-sn-detail="[^"]*"\s+hidden>', body)
+    assert pola_detail is not None, "Wadah detail catatan harus memiliki atribut hidden yang dapat dilepas oleh JS"
+    assert "display: none !important" not in body, "Wadah detail tidak boleh memiliki hidden permanen"
 
