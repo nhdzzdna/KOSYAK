@@ -1,4 +1,4 @@
-﻿"""
+"""
 tests/test_n3b_musik_dokumen.py
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Uji halaman Musik dan Dokumen yang memakai mekanisme koleksi N3a:
@@ -403,7 +403,7 @@ class TestDaftarSemuaDanFolderTerbuka:
         semua = body.split('id="collection-all-section"', 1)[1]
 
         assert "kunci-luar.mp3" in semua
-        assert "Terkunci" in semua
+        assert "Terkunci" not in semua
         assert 'id="collection-unfiled-section"' not in body
 
     def test_bagian_semua_disembunyikan_saat_folder_dibuka(self):
