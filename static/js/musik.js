@@ -188,7 +188,7 @@
 
   // Klik putar pada tabel
   document.addEventListener('click', function (event) {
-    var pemicu = event.target.closest('[data-track-play], .music-track-name, .kx-audio-track-title');
+    var pemicu = event.target.closest('[data-track-play], .kx-audio-track-title');
     if (!pemicu) {
       return;
     }

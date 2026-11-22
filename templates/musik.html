@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% macro track_row(f) %}
-<tr class="kx-audio-tr music-track"
+<tr class="kx-audio-tr"
     data-track
     data-file-id="{{ f.id }}"
     data-kind="audio"
@@ -21,13 +21,13 @@
     </label>
   </td>
   <td class="kx-audio-cell-play">
-    <button type="button" class="kx-audio-play-circle music-track-play" data-track-play title="{{ msg.play }}">
+    <button type="button" class="kx-audio-play-circle" data-track-play title="{{ msg.play }}">
       {{ ikon('play', 14) }}
     </button>
   </td>
   <td class="kx-audio-cell-title">
-    <span class="kx-audio-track-title music-track-name" title="{{ f.original_name }}">{{ f.original_name }}</span>
-    <span class="kx-audio-track-meta audio-track-meta">{{ f.extension|upper }}</span>
+    <span class="kx-audio-track-title" title="{{ f.original_name }}">{{ f.original_name }}</span>
+    <span class="kx-audio-track-meta">{{ f.extension|upper }}</span>
   </td>
   <td class="kx-audio-cell-mono kx-audio-cell-durasi">
     <span>-</span>
@@ -122,7 +122,7 @@
           </div>
 
           {% if semua %}
-          <div class="kx-table-wrap">
+          <div class="kx-table-wrap kx-audio-table-wrap">
             <table class="kx-audio-table kx-table">
               <colgroup>
                 <col class="kx-col-select" style="width: 44px;">
