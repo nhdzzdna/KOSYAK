@@ -4,7 +4,7 @@
  * - Membuka album, memuat isi via API, penampil media (KX.modal) untuk gambar & video
  * - Pemilihan banyak berkas dan sinkronisasi dengan KX.aksiMengambang
  * - Pencarian media lokal di sisi klien
- * - Aksi menu titik tiga (⋯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah via KX.konfirmasiHapus)
+ * - Aksi menu titik tiga (⋯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah dengan grant item.delete)
  * - Integrasi pengunci item generik item_lock.js (scope item.view)
  */
 (function () {

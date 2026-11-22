@@ -33,12 +33,12 @@ RUTE_IDOR = [
     ("POST", "/secure-notes/delete/{id}", "item.delete", "secure_notes", "catatan"),
     ("POST", "/vault/decrypt/{id}", "file.download", "vault_files", "berkas"),
     ("POST", "/vault/delete/{id}", "item.delete", "vault_files", "berkas"),
-    ("GET", "/media-vault/stream/{id}", "media.stream", "vault_files", "berkas"),
+    ("GET", "/media-vault/stream/{id}", "audio.play", "vault_files", "berkas"),
     ("POST", "/media-vault/play/{id}", "media.winamp", "vault_files", "berkas"),
     ("GET", "/media-vault/download/{id}", "file.download", "vault_files", "berkas"),
     ("POST", "/steganography/extract/{id}", "stego.extract", "stego_images", "stego"),
     ("GET", "/steganography/download/{id}", "stego.download", "stego_images", "stego"),
-    ("POST", "/steganography/delete/{id}", None, "stego_images", "stego"),
+    ("POST", "/steganography/delete/{id}", "item.delete", "stego_images", "stego"),
 ]
 
 

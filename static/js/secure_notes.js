@@ -6,7 +6,7 @@
  * - Tombol Buka meminta grant note.open, mengambil isi catatan, lalu menampilkannya
  *   di dalam kartu/baris yang sama dengan tombol Tutup.
  * - Tombol Tutup menyembunyikan isi dan membersihkan teks dari DOM.
- * - Hapus dikonfirmasi lewat KX.konfirmasiHapus (pindah ke Sampah).
+ * - Hapus dengan grant item.delete (pindah ke Sampah).
  * - Pencarian catatan lokal sisi klien via #sn-cari.
  */
 (function () {

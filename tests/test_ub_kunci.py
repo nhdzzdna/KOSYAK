@@ -270,7 +270,7 @@ class TestEndpointTerkunci:
 
         resp = client.get(
             f"/media-vault/stream/{fid}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", fid)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", fid)},
         )
         assert resp.status_code == 403
         assert resp.get_json()["reason"] == "terkunci"
@@ -328,7 +328,7 @@ class TestEndpointTerkunci:
         assert client.get(f"/media-vault/thumb/{foto}").status_code == 200
         assert client.get(
             f"/media-vault/stream/{lagu}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", lagu)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", lagu)},
         ).status_code == 200
         assert client.get(
             f"/media-vault/download/{lagu}",
@@ -535,7 +535,8 @@ class TestSampah:
         assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
         resp = client.post(f"/vault/delete/{fid}",
-                           data={"csrf_token": _csrf(client)})
+                           data={"csrf_token": _csrf(client),
+                                 "reauth_grant": _grant(client, "item.delete", fid)})
         assert resp.status_code == 302
 
         # Filter deleted_at lebih dulu: bukan 403 terkunci.
@@ -556,7 +557,8 @@ class TestSampah:
         assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
         resp = client.post(f"/vault/delete/{fid}",
-                           data={"csrf_token": _csrf(client)})
+                           data={"csrf_token": _csrf(client),
+                                 "reauth_grant": _grant(client, "item.delete", fid)})
         assert resp.status_code == 302
 
         # Grant album.unlock dan item.view aktif pun tidak memulihkan akses.

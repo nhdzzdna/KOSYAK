@@ -147,3 +147,97 @@ Sesuai Aturan 6, seluruh penyesuaian tes dicatat secara eksplisit:
 | `db2ec69` | `[U2g] teks antarmuka` | Sapuan gaya teks lugas di 12 berkas template dan strings.py sesuai aturan |
 | (commit penutup) | `[U2g] tes dan dokumen g1` | Pembaruan tes yang disesuaikan, tes kontrak baru test_u2g_kontrak.py, dokumen U2g.md |
 
+---
+
+## G2: Verifikasi untuk Hapus, Pulihkan, dan Putar Audio
+
+### Rancangan Arsitektur dan Scope (Ditulis Sebelum Pengkodean)
+
+Berdasarkan audit terhadap `modules/authentication/reauth.py`, `routes/reauth_routes.py`, `routes/trash_routes.py`, `routes/media_routes.py`, `static/js/reauth.js`, dan `static/js/sampah.js`:
+- Semantik inti grant (`issue_grant`, `consume_grant`, validasi HMAC token, TTL 120 detik, penyimpanan memori terisolasi thread) dipertahankan sepenuhnya tanpa perubahan.
+- Kriptografi inti (`modules/cryptography/*`) dan `session_keys` tidak disentuh sama sekali.
+- Scope baru yang ditambahkan:
+  1. `trash.restore` (sekali pakai, TTL 120s): untuk memulihkan item dari Sampah.
+  2. `audio.play` (sekali pakai, TTL 120s): untuk memutar audio via stream URL.
+  Catatan: `item.delete` sudah terdaftar dalam `SCOPES` pada modul reauth dan berstatus sekali pakai (tidak berada dalam `REUSABLE_TTL`).
+
+#### 1. Daftar Endpoint yang Terkena Perubahan
+
+| Endpoint | Metode | Scope Grant | Sekali Pakai? | Konvensi Resource ID | Keterangan |
+|---|---|---|---|---|---|
+| `/vault/delete/<int:resource_id>` | `POST` | `item.delete` | Ya (120s) | `resource_id` (int/str) | Pindah ke Sampah untuk dokumen/berkas, media, audio |
+| `/secure-notes/delete/<int:resource_id>` | `POST` | `item.delete` | Ya (120s) | `resource_id` (int/str) | Pindah ke Sampah untuk catatan aman |
+| `/account-vault/delete/<int:resource_id>` | `POST` | `item.delete` | Ya (120s) | `resource_id` (int/str) | Pindah ke Sampah untuk kredensial akun |
+| `/steganography/delete/<int:img_id>` | `POST` | `item.delete` | Ya (120s) | `img_id` (int/str) | Pindah ke Sampah untuk gambar steganografi |
+| `/api/sampah/pulihkan` | `POST` | `trash.restore` | Ya (120s) | `None` | Pulihkan item dari Sampah (tunggal maupun banyak sekaligus) |
+| `/media-vault/stream/<int:file_id>` | `GET` | `audio.play` | Ya (120s) | `file_id` (int/str) | Mengambil audio untuk diputar di pemutar modal |
+
+#### 2. Urutan Pemeriksaan Keamanan
+Mengikuti pola ketat `@require_grant`:
+1. Permintaan tanpa grant valid → HTTP 401 Unauthorized (`reason: "missing"` / `"invalid"` / `"expired"`).
+2. Permintaan dengan grant yang memiliki scope atau resource_id tidak cocok → HTTP 403 Forbidden (`reason: "scope"` / `"resource"`).
+3. Permintaan dengan grant valid tetapi item tidak ditemukan di basis data → HTTP 404 Not Found.
+4. Pemeriksaan akses tambahan (misalnya koleksi/album terkunci) tetap dijalankan setelah grant valid.
+5. Grant sekali pakai langsung dimusnahkan dari memori server setelah pemakaian pertama; permintaan kedua dengan token yang sama ditolak HTTP 401 (`reason: "invalid"`).
+
+#### 3. Alur Klien
+- **Hapus (Soft Delete)**: Seluruh tombol Hapus pada Dokumen, Media, Audio, Catatan, Akun, dan Stego menggunakan atribut `data-reauth="item.delete"` dan `data-reauth-resource="<id>"`. Dialog "yakin hapus?" (`KX.konfirmasiHapus`) dihilangkan untuk soft-delete; klik tombol Hapus langsung membuka dialog verifikasi step-up reauth (`#reauth-modal`). Setelah grant diperoleh, form dikirimkan langsung dan halaman menampilkan notifikasi toast (via flash).
+- **Pulihkan**: Tombol Pulihkan di baris tabel maupun tombol Pulihkan Terpilih (massal) meminta verifikasi grant `trash.restore` tanpa dialog konfirmasi tambahan. Mengikuti pola `trash.purge`, permintaan grant dilakukan satu kali untuk aksi (tunggal maupun massal), lalu token grant dikirim via header `X-Reauth-Grant` ke `POST /api/sampah/pulihkan`.
+- **Putar Audio**: Mengklik tombol Putar memicu dialog verifikasi grant `audio.play` dengan `resource_id = file_id`. Setelah grant terbit, klien melakukan `fetch('/media-vault/stream/<id>', { headers: { 'X-Reauth-Grant': token } })` satu kali, mengonversi respons ke Blob URL (`URL.createObjectURL(blob)`), memasangnya ke elemen `<audio controls>` di modal, dan membuka modal. Saat modal ditutup, `URL.revokeObjectURL` dipanggil seketika dan atribut `src` audio dilepas sehingga tidak ada cache media yang tertinggal di peramban.
+
+#### 4. Keputusan Tindakan yang Tidak Berubah
+Sesuai instruksi butir 4, fitur-fitur berikut tidak mengalami penambahan grant baru:
+- Ganti nama berkas/album (`POST /api/collections/...`)
+- Pindah folder/album (`POST /api/collections/move`)
+- Unggah berkas (`POST /vault/upload`, dsb.)
+- Filter pencarian dan pagination
+- Buka/edit catatan (tetap memakai `note.open` dan `note.edit`)
+- Tampilkan kredensial akun (tetap memakai `account.reveal`)
+- Kunci dan lepas kunci berkas/koleksi (tetap memakai `item.unlock` dan `album.unlock`)
+- Pratinjau dokumen (tetap memakai `doc.preview`)
+- Tampilan media gambar/video (tetap memakai `item.view`)
+- Hapus Permanen dan Kosongkan Sampah (tetap menggunakan konfirmasi dialog `KX.konfirmasiHapus` lalu grant `trash.purge`).
+
+#### 5. Tes yang Dihapus atau Diubah pada G2
+
+Sesuai Aturan 6 dan instruksi G2, seluruh penyesuaian tes lama dicatat secara rinci:
+
+1. `tests/test_ub_sampah.py`:
+   - `_pindah_ke_sampah`: Diperbarui untuk menerbitkan dan mengirim grant `item.delete` untuk item yang dipindahkan ke sampah via `reauth_grant` dan header `X-Reauth-Grant`.
+   - `TestHapusLunak::test_hapus_idempoten_ditolak_saat_sudah_di_sampah`: Ditambahkan grant `item.delete` agar permintaan lolos otentikasi grant dan menguji logika idempotensi (404).
+   - `TestHapusLunak::test_sampah_menutup_akses_langsung`: Mengganti pengujian stream dari scope lama `media.stream` ke scope baru `audio.play`.
+   - `TestPulihkan`: Seluruh pengujian pemulihan (`test_pulihkan_mengembalikan_item`, `test_pulihkan_respons_json`, `test_pulihkan_tanpa_csrf_ditolak`, `test_pulihkan_gagal_bila_satu_item_tidak_di_sampah`, `test_items_tidak_sah_ditolak`) diperbarui dengan grant `trash.restore` karena endpoint `/api/sampah/pulihkan` kini mewajibkan grant.
+   - `TestAntarPengguna::test_pulihkan_milik_orang_lain_ditolak`: Ditambahkan grant `trash.restore` milik pengguna lain.
+2. `tests/test_media_routes.py`:
+   - `TestMediaStream`: Seluruh pengujian endpoint `/media-vault/stream/{file_id}` diperbarui dari scope lama `media.stream` ke scope baru `audio.play`.
+3. `tests/test_j2_grants.py`:
+   - `TestMediaStreamGrant`: Diperbarui untuk menguji scope `audio.play` pada `/media-vault/stream/{file_id}`. Tes sifat dapat dipakai berulang tanpa header diubah menjadi tes sifat sekali pakai (`test_audio_play_sekali_pakai_tidak_bisa_dua_kali`) yang memastikan permintaan kedua ditolak 401.
+4. `tests/test_encrypted_storage.py`:
+   - `TestAccountVaultSesiI::test_hapus_lunak_dengan_grant`, `TestSecureNotesSesiI::test_hapus_lunak_dengan_grant`, `TestVaultSesiI::test_hapus_lunak_dengan_grant`: Diperbarui untuk mengirimkan grant `item.delete`.
+5. `tests/test_ub_kunci.py`:
+   - Pengujian stream diperbarui menggunakan scope `audio.play` dan pengujian `/vault/delete/` pada `TestSampah` diperbarui dengan grant `item.delete`.
+6. `tests/test_u2_kunci_berkas.py`:
+   - `test_item_terkunci_di_sampah_tetap_tidak_terjangkau`: Ditambahkan grant `item.delete` pada permintaan hapus berkas.
+7. `tests/test_l_idor_blockchain_media.py`:
+   - Mengubah scope rute `/media-vault/stream/{id}` menjadi `audio.play` dan `/steganography/delete/{id}` menjadi `item.delete`.
+
+#### 6. Pengujian Kontrak G2 (`tests/test_u2g_kontrak.py`)
+- `test_kontrak_ui_tanpa_konfirmasi_dan_dengan_data_reauth`: Memvalidasi bahwa seluruh template dengan tombol Hapus soft-delete (dokumen, media, audio, catatan, akun, stego) memiliki atribut `data-reauth="item.delete"`, dan tidak ada lagi pemanggilan `KX.konfirmasiHapus` untuk soft delete di seluruh skrip JS terkait.
+- `test_kontrak_hapus_semua_jenis_dengan_grant_sekali_pakai`: Memeriksa siklus lengkap scope `item.delete` pada seluruh 4 endpoint (file, note, cred, stego): tanpa grant (401), grant scope salah (403), grant sah (302), panggilan kedua (401 invalid), dan urutan grant sebelum 404.
+- `test_kontrak_trash_restore_grant_sekali_pakai`: Memeriksa siklus lengkap scope `trash.restore` pada `/api/sampah/pulihkan`: tanpa grant (401), scope salah (403), grant sah (200), panggilan kedua (401 invalid), dan urutan grant sebelum 404.
+- `test_kontrak_audio_play_grant_sekali_pakai`: Memeriksa siklus lengkap scope `audio.play` pada `/media-vault/stream/<id>`: tanpa grant (401), scope salah (403), grant sah (200), panggilan kedua (401 invalid), dan urutan grant sebelum 404.
+
+#### 7. Keterbatasan Jujur
+1. **Verifikasi per Tindakan pada Aksi Massal**: Untuk pemulihan massal di Sampah, klien menerbitkan satu grant `trash.restore` untuk satu transaksi batch (mengikuti pola `trash.purge`). Namun, untuk soft delete item yang dilakukan secara terpisah di tabel masing-masing, setiap tombol Hapus memicu verifikasi grant per item (`item.delete` dengan `resource_id` item terkait).
+2. **Streaming Audio Sekali Pakai & Blob URL**: Karena grant `audio.play` bersifat sekali pakai, pemutaran audio di peramban tidak dapat menggunakan URL stream langsung di `<audio src>` (karena browser dapat mengirimkan beberapa permintaan HTTP Range terpisah yang akan menggagalkan grant sekali pakai). Solusinya, audio diunduh via fetch tunggal dengan header `X-Reauth-Grant`, dijadikan Blob URL di memori, dan dimusnahkan seketika saat modal ditutup.
+
+#### 8. Riwayat Commit G2
+
+| Commit | Pesan Commit | Deskripsi |
+|---|---|---|
+| (commit 1) | `[U2g] verifikasi hapus dan pulihkan` | Grant item.delete pada vault/notes/account/stego delete, grant trash.restore pada pulihkan sampah, pembaruan template & JS tanpa konfirmasi hapus |
+| (commit 2) | `[U2g] verifikasi putar audio` | Scope audio.play sekali pakai pada media-vault/stream, fetch blob URL sekali di sisi klien dan pelepasan saat modal tutup |
+| (commit 3) | `[U2g] tes dan dokumen g2` | Pembaruan tes yang disesuaikan, uji kontrak baru test_u2g_kontrak.py, dokumen U2g.md bagian G2 |
+
+
+

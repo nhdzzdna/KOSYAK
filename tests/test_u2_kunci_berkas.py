@@ -288,7 +288,8 @@ class TestSinkronKunciKoleksi:
         assert _kunci_berkas(client, fid, "locked").status_code == 200
 
         resp = client.post(f"/vault/delete/{fid}",
-                           data={"csrf_token": _csrf(client)})
+                           data={"csrf_token": _csrf(client),
+                                 "reauth_grant": _grant(client, "item.delete", fid)})
         assert resp.status_code == 302
 
         assert client.get(f"/media-vault/view/{fid}").status_code == 404

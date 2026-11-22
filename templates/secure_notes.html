@@ -6,10 +6,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="kx-sn-page"
-     data-msg-search-empty="{{ MSG.NOTES_SEARCH_EMPTY }}"
-     data-msg-delete-title="{{ MSG.NOTES_DELETE_TITLE }}"
-     data-msg-delete-message="{{ MSG.NOTES_DELETE_MESSAGE }}">
+<div class="kx-sn-page" data-msg-search-empty="{{ MSG.NOTES_SEARCH_EMPTY }}"
+  data-msg-delete-title="{{ MSG.NOTES_DELETE_TITLE }}" data-msg-delete-message="{{ MSG.NOTES_DELETE_MESSAGE }}">
   <div class="kx-sn-grid">
 
     <!-- ── Daftar catatan ─────────────────────────────────────────────── -->
@@ -24,8 +22,7 @@
         <div class="kx-sn-toolbar">
           <div class="kx-sn-cari">
             {{ ikon('search', 15) }}
-            <input type="search" class="kx-input" id="sn-cari"
-                   placeholder="Cari catatan…" autocomplete="off" />
+            <input type="search" class="kx-input" id="sn-cari" placeholder="Cari catatan…" autocomplete="off" />
           </div>
         </div>
 
@@ -39,14 +36,13 @@
               </div>
               <div class="kx-sn-aksi">
                 <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm" id="sn-buka"
-                        data-sn-buka="{{ note.id }}"
-                        data-reauth="note.open"
-                        data-reauth-resource="{{ note.id }}"
-                        data-sn-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}"
-                        data-sn-edit-url="{{ url_for('notes.edit', resource_id=note.id) }}">
+                  data-sn-buka="{{ note.id }}" data-reauth="note.open" data-reauth-resource="{{ note.id }}"
+                  data-sn-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}"
+                  data-sn-edit-url="{{ url_for('notes.edit', resource_id=note.id) }}">
                   {{ ikon('eye', 14) }}<span>Buka</span>
                 </button>
-                <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}" class="kx-sn-form-hapus">
+                <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
+                  class="kx-sn-form-hapus">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                   <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm" id="sn-hapus-btn"
                           data-sn-hapus="{{ note.id }}"
@@ -60,19 +56,22 @@
             </div>
 
             <div class="kx-sn-detail" data-sn-detail="{{ note.id }}" hidden>
-              <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}" class="kx-sn-edit-form" data-sn-edit-form="{{ note.id }}">
+              <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}" class="kx-sn-edit-form"
+                data-sn-edit-form="{{ note.id }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <div class="kx-field">
                   <label class="kx-label" for="sn-edit-judul-{{ note.id }}">Judul</label>
-                  <input type="text" class="kx-input" id="sn-edit-judul-{{ note.id }}" name="title" value="{{ note.title }}" required />
+                  <input type="text" class="kx-input" id="sn-edit-judul-{{ note.id }}" name="title"
+                    value="{{ note.title }}" required />
                 </div>
                 <div class="kx-field">
                   <label class="kx-label" for="sn-edit-isi-{{ note.id }}">Isi catatan</label>
-                  <textarea class="kx-textarea kx-sn-isi" id="sn-edit-isi-{{ note.id }}" name="content" rows="8" required></textarea>
+                  <textarea class="kx-textarea kx-sn-isi" id="sn-edit-isi-{{ note.id }}" name="content" rows="8"
+                    required></textarea>
                 </div>
                 <div class="kx-sn-detail-aksi">
-                  <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm"
-                          data-reauth="note.edit" data-reauth-resource="{{ note.id }}">
+                  <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm" data-reauth="note.edit"
+                    data-reauth-resource="{{ note.id }}">
                     {{ ikon('lock', 14) }}<span>Simpan</span>
                   </button>
                   <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm" data-sn-tutup="{{ note.id }}">
@@ -111,13 +110,13 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="kx-field">
             <label class="kx-label" for="sn-tambah-judul">Judul</label>
-            <input type="text" class="kx-input" id="sn-tambah-judul" name="title"
-                   placeholder="Judul catatan" autocomplete="off" required />
+            <input type="text" class="kx-input" id="sn-tambah-judul" name="title" placeholder="Judul catatan"
+              autocomplete="off" required />
           </div>
           <div class="kx-field">
             <label class="kx-label" for="sn-tambah-isi">Isi catatan</label>
-            <textarea class="kx-textarea kx-sn-isi" id="sn-tambah-isi" name="content"
-                      rows="8" placeholder="Tulis isi catatan…" required></textarea>
+            <textarea class="kx-textarea kx-sn-isi" id="sn-tambah-isi" name="content" rows="8"
+              placeholder="Tulis isi catatan…" required></textarea>
           </div>
           <button type="submit" class="kx-btn kx-btn-primary kx-btn-full" id="sn-simpan">
             {{ ikon('lock', 15) }}<span>Simpan terenkripsi</span>

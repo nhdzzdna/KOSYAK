@@ -145,7 +145,12 @@ def _pindah_ke_sampah(client, jenis: str, item_id: int):
     """Pindahkan item milik pengguna sesi ke sampah lewat endpoint hapus."""
     halaman, pola = HALAMAN_HAPUS[jenis]
     token = _csrf(client, halaman)
-    resp = client.post(pola.format(item_id), data={"csrf_token": token})
+    grant = _grant(client, "item.delete", item_id)
+    resp = client.post(
+        pola.format(item_id),
+        data={"csrf_token": token, "reauth_grant": grant},
+        headers={"X-Reauth-Grant": grant},
+    )
     assert resp.status_code == 302
 
 
@@ -226,8 +231,9 @@ class TestHapusLunak:
         row = _unggah(client, "dua-kali.pdf")
         _pindah_ke_sampah(client, "file", row["id"])
         token = _csrf(client, "/vault")
+        g = _grant(client, "item.delete", row["id"])
         resp = client.post(
-            f"/vault/delete/{row['id']}", data={"csrf_token": token}
+            f"/vault/delete/{row['id']}", data={"csrf_token": token, "reauth_grant": g}
         )
         assert resp.status_code == 404
         assert _baris("vault_files", row["id"]) is not None
@@ -261,7 +267,7 @@ class TestHapusLunak:
         assert resp.status_code == 404
 
         for scope, url in (
-            ("media.stream", f"/media-vault/stream/{fid}"),
+            ("audio.play", f"/media-vault/stream/{fid}"),
             ("file.download", f"/media-vault/download/{fid}"),
         ):
             resp = client.get(
@@ -369,6 +375,7 @@ class TestPulihkan:
         resp = client.post("/api/sampah/pulihkan", data={
             "csrf_token": _csrf(client, "/sampah"),
             "items": _items(("file", row["id"])),
+            "reauth_grant": _grant(client, "trash.restore"),
         })
         assert resp.status_code == 302
 
@@ -384,7 +391,10 @@ class TestPulihkan:
         resp = client.post(
             "/api/sampah/pulihkan",
             json={"items": [{"jenis": "file", "id": row["id"]}]},
-            headers={"X-CSRFToken": _csrf(client, "/sampah")},
+            headers={
+                "X-CSRFToken": _csrf(client, "/sampah"),
+                "X-Reauth-Grant": _grant(client, "trash.restore"),
+            },
         )
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
@@ -395,6 +405,7 @@ class TestPulihkan:
         _pindah_ke_sampah(client, "file", row["id"])
         resp = client.post("/api/sampah/pulihkan", data={
             "items": _items(("file", row["id"])),
+            "reauth_grant": _grant(client, "trash.restore"),
         })
         assert resp.status_code == 400
         assert _baris("vault_files", row["id"])["deleted_at"] is not None
@@ -406,6 +417,7 @@ class TestPulihkan:
         resp = client.post("/api/sampah/pulihkan", data={
             "csrf_token": _csrf(client, "/sampah"),
             "items": _items(("file", row["id"]), ("note", catatan["id"])),
+            "reauth_grant": _grant(client, "trash.restore"),
         })
         assert resp.status_code == 404
         # All-or-nothing: catatan tetap di sampah.
@@ -418,6 +430,7 @@ class TestPulihkan:
                     json.dumps([{"jenis": "file", "id": "bukan-angka"}])):
             resp = client.post("/api/sampah/pulihkan", data={
                 "csrf_token": token, "items": isi,
+                "reauth_grant": _grant(client, "trash.restore"),
             })
             assert resp.status_code == 400
 
@@ -692,6 +705,7 @@ class TestAntarPengguna:
         resp = lain.post("/api/sampah/pulihkan", data={
             "csrf_token": _csrf(lain, "/sampah"),
             "items": _items(("file", row["id"])),
+            "reauth_grant": _grant(lain, "trash.restore"),
         })
         assert resp.status_code == 404
         assert _baris("vault_files", row["id"])["deleted_at"] is not None

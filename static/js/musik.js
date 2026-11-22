@@ -7,7 +7,7 @@
  * - Menutup modal menghentikan audio dan melepas sumbernya.
  * - Pencarian trek lokal di sisi klien (memfilter baris tabel).
  * - Checkbox pilih semua dan sinkronisasi dengan KX.aksiMengambang.
- * - Menu ⋯ per baris: Kunci/Lepas kunci, Buka di Winamp, Unduh, Hapus (ke Sampah via KX.konfirmasiHapus).
+ * - Menu ⋯ per baris: Kunci/Lepas kunci, Buka di Winamp, Unduh, Hapus (ke Sampah dengan grant item.delete).
  * - Integrasi dengan CryptixLock untuk trek terkunci.
  */
 (function () {

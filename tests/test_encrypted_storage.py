@@ -470,12 +470,13 @@ class TestAccountVaultSesiI:
         assert resp.status_code == 404
         assert _baris_kredensial(baris["id"]) == baris
 
-    def test_hapus_lunak_tanpa_grant(self, client):
+    def test_hapus_lunak_dengan_grant(self, client):
         baris = _tambah_kredensial(client)
         token = _csrf(client, "/account-vault")
+        grant = _token_grant(client, "item.delete", baris["id"])
         resp = client.post(
             f"/account-vault/delete/{baris['id']}",
-            data={"csrf_token": token},
+            data={"csrf_token": token, "reauth_grant": grant},
         )
         assert resp.status_code == 302
         sesudah = _baris_kredensial(baris["id"])
@@ -642,12 +643,13 @@ class TestSecureNotesSesiI:
         assert resp.status_code == 404
         assert _baris_catatan(baris["id"]) == baris
 
-    def test_hapus_lunak_tanpa_grant(self, client):
+    def test_hapus_lunak_dengan_grant(self, client):
         baris = _tambah_catatan(client)
         token = _csrf(client, "/secure-notes")
+        grant = _token_grant(client, "item.delete", baris["id"])
         resp = client.post(
             f"/secure-notes/delete/{baris['id']}",
-            data={"csrf_token": token},
+            data={"csrf_token": token, "reauth_grant": grant},
         )
         assert resp.status_code == 302
         sesudah = _baris_catatan(baris["id"])
@@ -755,11 +757,12 @@ class TestVaultSesiI:
         )
         assert resp.status_code == 404
 
-    def test_hapus_lunak_tanpa_grant(self, client):
+    def test_hapus_lunak_dengan_grant(self, client):
         row = _unggah_berkas(client, "akan-dihapus.pdf", b"isi")
         token = _csrf(client, "/vault")
+        grant = _token_grant(client, "item.delete", row["id"])
         resp = client.post(
-            f"/vault/delete/{row['id']}", data={"csrf_token": token}
+            f"/vault/delete/{row['id']}", data={"csrf_token": token, "reauth_grant": grant}
         )
         assert resp.status_code == 302
         sesudah = _baris_berkas(row["id"])
