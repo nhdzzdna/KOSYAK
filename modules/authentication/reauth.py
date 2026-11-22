@@ -52,6 +52,8 @@ SCOPES = frozenset({
     "item.unlock",
     "doc.preview",
     "trash.purge",
+    "trash.restore",
+    "audio.play",
     "settings.change",
     "biometric.manage",
     "account.danger",

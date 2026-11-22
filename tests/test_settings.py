@@ -155,7 +155,7 @@ class TestHalamanSettings:
         assert "D:\\dongle-a" in body
         assert "D:\\dongle-b" in body
         assert "Pilih dongle tujuan" in body
-        assert MSG.USB_REREGISTER_HINT in body
+        assert MSG.USB_REREGISTER_HINT not in body
 
     def test_kredensial_webauthn_ditampilkan_dengan_nama(self, app, client):
         _masuk(client, app)

@@ -125,12 +125,13 @@ def test_halaman_audio_markup_kx(client):
     # 5. Kolom durasi dan badge status
     assert 'Terenkripsi' in html
 
-    # 6. Pemutar kustom tetap di bawah
-    assert 'class="kx-audio-player-bar"' in html
+    # 6. Modal pemutar audio bawaan browser
+    assert 'id="audio-modal"' in html
     assert 'id="music-audio"' in html
-    assert 'id="music-play-toggle"' in html
-    assert 'id="music-progress-bar"' in html
-    assert 'id="music-time-cur"' in html
+    assert '<audio id="music-audio" controls' in html
+    assert 'class="kx-audio-player-bar"' not in html
+    assert 'id="music-play-toggle"' not in html
+    assert 'id="music-progress-bar"' not in html
 
     # 7. Pencarian trek & pilihan massal
     assert 'id="audio-search"' in html

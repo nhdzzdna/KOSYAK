@@ -4,11 +4,6 @@
 {% block auth_title %}{{ MSG.AUTH_RECOVERY_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<div class="kx-infobox authx-infobox" role="note">
-  {{ ikon('info', 16) }}
-  <p>{{ MSG.AUTH_RECOVERY_INTRO }}</p>
-</div>
-
 <form method="POST" id="account-recovery-form" class="authx-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
@@ -24,7 +19,6 @@
               class="kx-textarea authx-mono" rows="3" required
               autocomplete="off" spellcheck="false"
               placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXX"></textarea>
-    <p class="authx-help">{{ MSG.AUTH_RECOVERY_KEY_HINT }}</p>
   </div>
 
   <div class="kx-field">
@@ -54,7 +48,6 @@
         <option value="" disabled selected>{{ MSG.AUTH_DONGLE_NONE }}</option>
       {% endfor %}
     </select>
-    <p class="authx-help">{{ MSG.AUTH_RECOVERY_DONGLE_HINT }}</p>
   </div>
 
   <button type="submit" class="kx-btn kx-btn-primary kx-btn-lg kx-btn-block">

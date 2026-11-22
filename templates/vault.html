@@ -74,7 +74,9 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm doc-action"
               aria-label="{{ msg.delete_file }}"
-              title="{{ msg.delete_file }}">
+              title="{{ msg.delete_file }}"
+              data-reauth="item.delete"
+              data-reauth-resource="{{ f.id }}">
         {{ ikon('trash', 15) }}<span>{{ msg.delete_file }}</span>
       </button>
     </form>
@@ -112,7 +114,7 @@
             <p class="kx-dropzone-title">Tarik dokumen ke sini</p>
             <p class="kx-doc-hint">atau klik untuk memilih berkas</p>
           </div>
-          <p class="kx-doc-hint">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB · Berkas dienkripsi sebelum disimpan</p>
+          <p class="kx-doc-hint">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB</p>
           <button type="submit" class="kx-btn kx-btn-primary kx-btn-full">
             {{ ikon('lock', 16) }}
             <span>Enkripsi &amp; Unggah</span>

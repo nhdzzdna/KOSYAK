@@ -117,12 +117,12 @@ class TestCryptoToolsForm:
         assert 'autocomplete="new-password"' in body
         assert 'data-lpignore="true"' in body
         assert "Kunci enkripsi" in body
-        assert "Bukan kata sandi akun Anda." in body
+        assert "Bukan kata sandi akun Anda." not in body
 
     def test_hint_vigenere_dan_pbkdf2_tersembunyi_bawaan(self, client):
         body = client.get("/crypto-tools").get_data(as_text=True)
         assert re.search(r'data-hint-vigenere[^>]*\bhidden\b', body)
-        assert re.search(r'data-hint-kunci[^>]*\bhidden\b', body)
+        assert 'data-hint-kunci' not in body
         assert re.search(r'id="ct-passphrase-field"[^>]*\bhidden\b', body)
 
     def test_post_without_csrf_rejected(self, client):

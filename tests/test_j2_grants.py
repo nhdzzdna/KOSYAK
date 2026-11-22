@@ -152,14 +152,14 @@ class TestMediaStreamGrant:
         file_id = _buat_media(1, "lagu.mp3")
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", file_id)},
         )
         assert resp.status_code == 200
         assert resp.data == ISI
 
     def test_range_206_dan_416(self, client):
         file_id = _buat_media(1, "lagu.mp3")
-        token = _grant(client, "media.stream", file_id)
+        token = _grant(client, "audio.play", file_id)
         ok = client.get(
             f"/media-vault/stream/{file_id}",
             headers={"Range": "bytes=2-9", "X-Reauth-Grant": token},
@@ -167,9 +167,10 @@ class TestMediaStreamGrant:
         assert ok.status_code == 206
         assert ok.data == ISI[2:10]
 
+        token2 = _grant(client, "audio.play", file_id)
         salah = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=999999-", "X-Reauth-Grant": token},
+            headers={"Range": "bytes=999999-", "X-Reauth-Grant": token2},
         )
         assert salah.status_code == 416
 
@@ -178,7 +179,7 @@ class TestMediaStreamGrant:
         file_b = _buat_media(1, "b.mp3")
         resp = client.get(
             f"/media-vault/stream/{file_b}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_a)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", file_a)},
         )
         assert resp.status_code == 403
         assert resp.get_json()["reason"] == "resource"
@@ -187,14 +188,14 @@ class TestMediaStreamGrant:
         file_id = _buat_media(1, "lagu.mp3")
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"X-Reauth-Grant": _grant_sesi_lain("media.stream", file_id)},
+            headers={"X-Reauth-Grant": _grant_sesi_lain("audio.play", file_id)},
         )
         assert resp.status_code == 401
         assert resp.get_json()["reason"] == "session"
 
     def test_grant_kedaluwarsa_ditolak(self, client, monkeypatch):
         file_id = _buat_media(1, "lagu.mp3")
-        token = _grant(client, "media.stream", file_id)
+        token = _grant(client, "audio.play", file_id)
         sekarang = reauth._now()
         monkeypatch.setattr(reauth, "_now", lambda: sekarang + 901)
         resp = client.get(
@@ -204,25 +205,20 @@ class TestMediaStreamGrant:
         assert resp.status_code == 401
         assert resp.get_json()["reason"] == "expired"
 
-    def test_grant_aktif_ditemukan_tanpa_header(self, client):
+    def test_audio_play_sekali_pakai_tidak_bisa_dua_kali(self, client):
         file_id = _buat_media(1, "lagu.mp3")
-        _grant(client, "media.stream", file_id)
-        resp = client.get(f"/media-vault/stream/{file_id}")
-        assert resp.status_code == 200
-        assert resp.data == ISI
-
-        # Grant berulang tetap terikat resource: resource lain tidak lolos.
-        lain = _buat_media(1, "lain.mp3")
-        resp = client.get(f"/media-vault/stream/{lain}")
-        assert resp.status_code == 401
-        assert resp.get_json()["reason"] == "missing"
-
-    def test_grant_aktif_sesi_lain_tidak_ditemukan(self, client):
-        file_id = _buat_media(1, "lagu.mp3")
-        _grant_sesi_lain("media.stream", file_id)
-        resp = client.get(f"/media-vault/stream/{file_id}")
-        assert resp.status_code == 401
-        assert resp.get_json()["reason"] == "missing"
+        token = _grant(client, "audio.play", file_id)
+        resp1 = client.get(
+            f"/media-vault/stream/{file_id}",
+            headers={"X-Reauth-Grant": token},
+        )
+        assert resp1.status_code == 200
+        resp2 = client.get(
+            f"/media-vault/stream/{file_id}",
+            headers={"X-Reauth-Grant": token},
+        )
+        assert resp2.status_code == 401
+        assert resp2.get_json()["reason"] == "invalid"
 
 
 class TestScopeSekaliPakai:

@@ -74,7 +74,8 @@
           </form>
           <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button type="submit" class="kx-media-menu-item is-danger">
+            <button type="submit" class="kx-media-menu-item is-danger"
+                    data-reauth="item.delete" data-reauth-resource="{{ f.id }}">
               {{ ikon('trash', 14) }}<span>Hapus</span>
             </button>
           </form>
@@ -115,7 +116,7 @@
               <p class="kx-dropzone-title">Tarik foto atau video ke sini</p>
               <p class="kx-media-hint">atau klik untuk memilih berkas</p>
             </div>
-            <p class="kx-media-hint">Gambar &amp; video (PNG, JPG, MP4, dsb.) · Maks. 64 MB · Berkas dienkripsi sebelum disimpan</p>
+            <p class="kx-media-hint">Gambar &amp; video (PNG, JPG, MP4, dsb.) · Maks. 64 MB</p>
             <button type="submit" class="kx-btn kx-btn-primary kx-btn-full">
               {{ ikon('lock', 16) }}
               <span>Enkripsi &amp; Unggah</span>

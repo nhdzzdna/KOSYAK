@@ -122,7 +122,7 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, "lagu.mp3", ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", file_id)},
         )
         assert resp.status_code == 200
         assert resp.data == ISI_AUDIO
@@ -136,7 +136,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=2-9",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 206
@@ -151,7 +151,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=10-",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 206
@@ -162,7 +162,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=-10",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 206
@@ -181,7 +181,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": rentang,
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 416
@@ -192,7 +192,7 @@ class TestMediaStream:
         file_id, _ = _buat_media(2, "lagu.mp3", ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", file_id)},
         )
         assert resp.status_code == 404
 
@@ -203,7 +203,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=0-15",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 206
@@ -230,7 +230,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=0-3",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 206
@@ -241,7 +241,7 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, nama, ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+            headers={"X-Reauth-Grant": _grant(client, "audio.play", file_id)},
         )
         assert resp.status_code == 415
 
@@ -257,7 +257,7 @@ class TestMediaStream:
             f"/media-vault/stream/{file_id}",
             headers={
                 "Range": "bytes=0-15",
-                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+                "X-Reauth-Grant": _grant(client, "audio.play", file_id),
             },
         )
         assert resp.status_code == 403

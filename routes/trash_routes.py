@@ -110,6 +110,7 @@ def index():
 @trash_bp.route("/api/sampah/pulihkan", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
+@require_grant("trash.restore")
 def pulihkan():
     items = _daftar_items()
     if items is None:

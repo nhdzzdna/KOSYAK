@@ -4,7 +4,7 @@
  * - Membuka album, memuat isi via API, penampil media (KX.modal) untuk gambar & video
  * - Pemilihan banyak berkas dan sinkronisasi dengan KX.aksiMengambang
  * - Pencarian media lokal di sisi klien
- * - Aksi menu titik tiga (⋯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah via KX.konfirmasiHapus)
+ * - Aksi menu titik tiga (⋯): Lihat, Unduh, Pindahkan, Hapus (ke Sampah dengan grant item.delete)
  * - Integrasi pengunci item generik item_lock.js (scope item.view)
  */
 (function () {
@@ -724,39 +724,6 @@
         tampilkanGalat(err.message);
       });
       return;
-    }
-  });
-
-  // Hapus via KX.konfirmasiHapus
-  document.addEventListener('submit', function (event) {
-    var form = event.target;
-    if (!form || !form.action || form.action.indexOf('/vault/delete/') === -1) {
-      return;
-    }
-    if (form.getAttribute('data-kx-confirmed') === '1') {
-      return;
-    }
-
-    event.preventDefault();
-    var baris = form.closest('[data-media-item]');
-    var namaItem = baris ? baris.getAttribute('data-name') : 'media ini';
-
-    if (window.KX && typeof window.KX.konfirmasiHapus === 'function') {
-      window.KX.konfirmasiHapus({
-        judul: 'Pindahkan ke Sampah?',
-        nama: namaItem,
-        pesan: 'Media {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana.',
-        labelTombol: 'Pindahkan',
-        onKonfirmasi: function () {
-          form.setAttribute('data-kx-confirmed', '1');
-          form.submit();
-        }
-      });
-    } else {
-      if (window.confirm('Pindahkan ' + namaItem + ' ke Sampah?')) {
-        form.setAttribute('data-kx-confirmed', '1');
-        form.submit();
-      }
     }
   });
 

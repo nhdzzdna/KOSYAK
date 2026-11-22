@@ -23,7 +23,6 @@
   var fieldPassphrase = document.getElementById('ct-passphrase-field');
   var inputKunci = document.getElementById('ct-kunci');
   var inputPassphrase = document.getElementById('ct-passphrase');
-  var hintKunci = document.querySelector('[data-hint-kunci]');
   var hintVigenere = document.querySelector('[data-hint-vigenere]');
   var tombolProses = document.getElementById('ct-proses');
   var labelProses = document.getElementById('ct-proses-label');
@@ -60,9 +59,6 @@
     }
     if (fieldPassphrase) {
       fieldPassphrase.hidden = !isSuper;
-    }
-    if (hintKunci) {
-      hintKunci.hidden = isVigenere || isSuper;
     }
     if (hintVigenere) {
       hintVigenere.hidden = !isVigenere;

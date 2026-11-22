@@ -330,7 +330,7 @@ def thumb(file_id: int):
 
 @media_bp.route("/media-vault/stream/<int:file_id>")
 @login_required
-@require_grant("media.stream")
+@require_grant("audio.play")
 def stream(file_id: int):
     """
     Sajikan media terenkripsi lewat HTTP Range tanpa menulis plaintext ke disk.

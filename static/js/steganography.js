@@ -479,34 +479,6 @@
       return;
     }
 
-    var itemHapus = event.target.closest('[data-sg-hapus]');
-    if (itemHapus) {
-      tutupSemuaMenu();
-      var barisHapus = itemHapus.closest('tr[data-sg-id]');
-      if (!barisHapus) {
-        return;
-      }
-      var nama = barisHapus.getAttribute('data-sg-nama') || '';
-      var urlHapus = barisHapus.getAttribute('data-sg-hapus-url') || '';
-      var kirim = function () {
-        if (formHapus && urlHapus) {
-          formHapus.action = urlHapus;
-          formHapus.submit();
-        }
-      };
-      if (window.KX && typeof KX.konfirmasiHapus === 'function') {
-        KX.konfirmasiHapus({
-          judul: pesan('delete-title'),
-          nama: nama,
-          pesan: pesan('delete-message', { nama: nama }),
-          onKonfirmasi: kirim
-        });
-      } else {
-        kirim();
-      }
-      return;
-    }
-
     if (event.target.closest('[data-sg-fokus-sisip]')) {
       var target = inputPesan || formSisip;
       if (target && target.scrollIntoView) {
