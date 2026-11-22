@@ -19,7 +19,7 @@ CSP = (
     "default-src 'self'; script-src 'self'; "
     "style-src 'self' 'unsafe-inline'; "
     "font-src 'self'; "
-    "img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; "
+    "img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; "
     "frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'"
 )
 
@@ -56,6 +56,7 @@ def _periksa_header(header):
     csp = header.get("Content-Security-Policy", "")
     assert csp == CSP
     assert "img-src 'self' data: blob:" in csp
+    assert "media-src 'self' blob:" in csp
     assert "frame-src 'self' blob:" in csp
     assert "object-src 'none'" in csp
 

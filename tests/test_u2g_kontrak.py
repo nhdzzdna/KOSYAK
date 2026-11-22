@@ -48,21 +48,34 @@ def client(tmp_path, monkeypatch):
     return c
 
 
-def test_kontrak_grid_header_dan_baris_audio():
-    """Grid header dan baris Audio memakai selector dan deklarasi grid-template-columns yang sama."""
+def test_kontrak_tabel_audio_fixed_dan_colgroup(client):
+    """Tabel Audio memakai <colgroup>, table-layout: fixed, tanpa display: grid pada tr, dan th == td."""
     css_path = AKAR / "static" / "css" / "halaman" / "audio.css"
-    konten = css_path.read_text(encoding="utf-8")
+    konten_css = css_path.read_text(encoding="utf-8")
 
-    # Memastikan selector bersama .kx-audio-table thead tr, .kx-audio-tr memiliki grid-template-columns
-    pola = re.compile(
-        r"\.kx-audio-table\s+thead\s+tr\s*,\s*\.kx-audio-tr\s*\{[^}]*grid-template-columns:\s*([^;]+);",
-        re.DOTALL,
-    )
-    cocok = pola.search(konten)
-    assert cocok is not None, "Selector bersama thead tr dan kx-audio-tr tidak ditemukan di audio.css"
-    cols = cocok.group(1).strip()
-    # Harus memuat 6 kolom: select, play, title, durasi, status, menu
-    assert "minmax" in cols, f"Kolom grid tidak fleksibel: {cols}"
+    # 1. audio.css memuat table-layout: fixed
+    assert "table-layout: fixed" in konten_css, "audio.css harus memuat table-layout: fixed"
+
+    # 2. Tidak memakai display: grid pada tr
+    pola_grid_tr = re.compile(r"tr[^{]*\{[^}]*display\s*:\s*grid", re.DOTALL | re.IGNORECASE)
+    assert not pola_grid_tr.search(konten_css), "audio.css tidak boleh memakai display: grid pada tr"
+
+    # 3. Baris trek tanpa border-radius kartu
+    pola_radius = re.compile(r"\.kx-audio-tr\s*\{[^}]*border-radius\s*:\s*var\(--kx-radius-card\)", re.DOTALL)
+    assert not pola_radius.search(konten_css), "kx-audio-tr tidak boleh memiliki border-radius kartu"
+
+    # 4. templates/musik.html memiliki <colgroup>
+    html_path = AKAR / "templates" / "musik.html"
+    konten_html = html_path.read_text(encoding="utf-8")
+    assert "<colgroup>" in konten_html, "templates/musik.html harus memiliki <colgroup>"
+
+    # 5. Jumlah <th> di thead sama dengan jumlah <td> pada baris macro track_row
+    th_count = len(re.findall(r"<th\b", konten_html))
+    # Ambil macro track_row
+    macro_match = re.search(r"{%\s*macro\s+track_row\([^)]*\)\s*%}(.*?){%\s*endmacro\s*%}", konten_html, re.DOTALL)
+    assert macro_match, "Macro track_row tidak ditemukan di musik.html"
+    td_count = len(re.findall(r"<td\b", macro_match.group(1)))
+    assert th_count == td_count, f"Jumlah <th> ({th_count}) harus sama dengan jumlah <td> ({td_count})"
 
 
 def test_kontrak_tanpa_pemutar_kustom_di_musik_html():
@@ -191,9 +204,12 @@ def _tambah_note(user_id=1):
     from database.db import get_db
     from modules.cryptography.key_management import purpose_key
     from modules.cryptography.database_encryption import encrypt_field, field_aad
-    db_key = purpose_key(bytes(range(32)), "database")
+    from modules.cryptography.super_encryption import super_encrypt
+    dek = bytes(range(32))
+    db_key = purpose_key(dek, "database")
     t = encrypt_field("Catatan", db_key, field_aad(user_id, "secure_notes", "title_enc"))
-    c = encrypt_field("Isi", db_key, field_aad(user_id, "secure_notes", "content_enc"))
+    isi_super = super_encrypt("Isi", master_key=dek)
+    c = encrypt_field(isi_super, db_key, field_aad(user_id, "secure_notes", "content_enc"))
     with get_db() as db:
         cur = db.execute(
             "INSERT INTO secure_notes (user_id, title_enc, content_enc) VALUES (?, ?, ?)",
@@ -399,10 +415,13 @@ def test_kontrak_audio_play_grant_sekali_pakai(client):
     assert resp.status_code == 403
     assert resp.get_json()["reason"] == "scope"
 
-    # 3. Grant benar -> 200
+    # 3. Grant benar -> 200, Content-Type audio/*, isi dan panjang sama dengan plaintext asli
     t_benar = _grant(client, "audio.play", fid)
     resp = client.get(f"/media-vault/stream/{fid}", headers={"X-Reauth-Grant": t_benar})
     assert resp.status_code == 200
+    assert resp.content_type.startswith("audio/")
+    assert resp.data == b"ID3\x03\x00\x00\x00\x00\x00\x00audio-data"
+    assert len(resp.data) == 20
 
     # 4. Panggilan kedua dengan grant yang sama -> 401
     resp = client.get(f"/media-vault/stream/{fid}", headers={"X-Reauth-Grant": t_benar})
@@ -413,4 +432,104 @@ def test_kontrak_audio_play_grant_sekali_pakai(client):
     t_ada = _grant(client, "audio.play", 99999)
     resp = client.get(f"/media-vault/stream/{99999}", headers={"X-Reauth-Grant": t_ada})
     assert resp.status_code == 404
+
+
+def test_server_buka_catatan_dengan_grant(client):
+    """(a) Server: buka catatan dengan note.open kembalikan isi, tanpa grant 401, scope salah 403."""
+    nid = _tambah_note(user_id=1)
+    csrf = _csrf(client)
+
+    # 1. Tanpa grant -> 401
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf},
+    )
+    assert resp.status_code == 401
+    assert resp.get_json()["reason"] == "missing"
+
+    # 2. Scope salah -> 403
+    t_salah = _grant(client, "doc.preview", nid)
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf, "X-Reauth-Grant": t_salah},
+    )
+    assert resp.status_code == 403
+    assert resp.get_json()["reason"] == "scope"
+
+    # 3. Grant benar -> 200 dengan judul dan isi terdekripsi
+    t_benar = _grant(client, "note.open", nid)
+    resp = client.post(
+        f"/secure-notes/open/{nid}",
+        headers={"Content-Type": "application/json", "X-CSRFToken": csrf, "X-Reauth-Grant": t_benar},
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["title"] == "Catatan"
+    assert data["content"] == "Isi"
+
+
+def test_kontrak_selektor_secure_notes_js(client):
+    """(b) Kontrak: setiap id & data-* yang dirujuk secure_notes.js ada di template; (c) detail tidak hidden permanen."""
+    _tambah_note(user_id=1)
+    resp = client.get("/secure-notes")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+
+    # Memeriksa elemen dan selektor utama yang dirujuk secure_notes.js
+    selektor_wajib = [
+        "kx-sn-page",
+        'id="sn-cari"',
+        'id="sn-tak-cocok"',
+        'id="sn-daftar"',
+        "data-sn-item",
+        "data-sn-judul",
+        "data-sn-buka",
+        "data-sn-open-url",
+        "data-sn-detail",
+        "data-sn-tutup",
+        'name="title"',
+        'name="content"',
+    ]
+    for sel in selektor_wajib:
+        assert sel in body, f"Selektor {sel} yang dirujuk secure_notes.js tidak ditemukan di HTML secure_notes"
+
+    # Wadah detail catatan menggunakan atribut 'hidden' standar HTML, bukan inline display:none !important
+    pola_detail = re.search(r'<div\s+class="kx-sn-detail"\s+data-sn-detail="[^"]*"\s+hidden>', body)
+    assert pola_detail is not None, "Wadah detail catatan harus memiliki atribut hidden yang dapat dilepas oleh JS"
+    assert "display: none !important" not in body, "Wadah detail tidak boleh memiliki hidden permanen"
+
+
+def test_kontrak_pemetaan_label_verifikasi():
+    """Label verifikasi ramah pengguna: tanpa nama scope bertitik, kata sumber daya, grant, atau scope."""
+    from modules.strings import MSG
+
+    assert hasattr(MSG, "REAUTH_SCOPE_LABELS"), "MSG harus mendefinisikan REAUTH_SCOPE_LABELS"
+    assert hasattr(MSG, "REAUTH_DEFAULT_LABEL"), "MSG harus mendefinisikan REAUTH_DEFAULT_LABEL"
+
+    kata_terlarang = ["sumber daya", "grant", "scope"]
+    pola_bertitik = re.compile(r"\b[a-z]+\.[a-z]+\b")
+
+    for k, v in MSG.REAUTH_SCOPE_LABELS.items():
+        assert not pola_bertitik.search(v), f"Label untuk '{k}' membocorkan nama scope bertitik: '{v}'"
+        for kata in kata_terlarang:
+            assert kata not in v.lower(), f"Label untuk '{k}' memuat kata terlarang '{kata}': '{v}'"
+
+    for kata in kata_terlarang:
+        assert kata not in MSG.REAUTH_DEFAULT_LABEL.lower()
+
+
+def test_kontrak_modal_reauth_tanpa_nama_scope_mentah(client):
+    """_reauth_modal.html yang dirender menyertakan data-labels JSON dan tidak menampilkan teks scope/sumber daya."""
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+
+    assert 'id="reauth-modal"' in body
+    assert 'data-labels=' in body
+    assert 'data-default-label=' in body
+
+    # Pastikan teks lama pembocor tidak ada di template
+    assert "pada sumber daya" not in body
+    assert 'Tindakan "' not in body
 

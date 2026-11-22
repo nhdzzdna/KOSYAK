@@ -7,14 +7,13 @@
 {% endblock %}
 
 {% macro track_row(f) %}
-<tr class="kx-audio-tr music-track{% if f.state == 'locked' %} item-terkunci{% endif %}"
+<tr class="kx-audio-tr music-track"
     data-track
     data-file-id="{{ f.id }}"
     data-kind="audio"
     data-name="{{ f.original_name }}"
     data-view-url="{{ f.view_url }}"
     data-stream-url="{{ f.stream_url }}"
-    data-locked="{{ 1 if f.state == 'locked' else 0 }}"
     data-collection-id="{{ f.collection_id or '' }}">
   <td class="kx-cell-select kx-audio-cell-select">
     <label class="media-select" title="{{ msg.pick }}">
@@ -23,11 +22,7 @@
   </td>
   <td class="kx-audio-cell-play">
     <button type="button" class="kx-audio-play-circle music-track-play" data-track-play title="{{ msg.play }}">
-      {% if f.state == 'locked' %}
-        {{ ikon('lock', 16) }}
-      {% else %}
-        {{ ikon('play', 14) }}
-      {% endif %}
+      {{ ikon('play', 14) }}
     </button>
   </td>
   <td class="kx-audio-cell-title">
@@ -37,28 +32,12 @@
   <td class="kx-audio-cell-mono kx-audio-cell-durasi">
     <span>-</span>
   </td>
-  <td class="kx-audio-cell-status">
-    {% if f.state == 'locked' %}
-      <span class="kx-badge kx-badge-warn item-lock-note">Terkunci</span>
-    {% else %}
-      <span class="kx-badge kx-badge-ok">Terenkripsi</span>
-    {% endif %}
-  </td>
   <td class="kx-cell-actions kx-audio-cell-actions">
     <div class="kx-audio-menu-wrap">
       <button type="button" class="kx-btn kx-btn-icon kx-btn-sm" data-menu-toggle aria-label="Aksi trek">
         {{ ikon('more-horizontal', 16) }}
       </button>
       <div class="kx-audio-menu-dropdown" data-menu-dropdown hidden>
-        {% if f.state == 'locked' %}
-        <button type="button" class="kx-audio-menu-item" data-track-unlock>
-          {{ ikon('lock', 14) }}<span>Lepas kunci</span>
-        </button>
-        {% else %}
-        <button type="button" class="kx-audio-menu-item" data-track-lock>
-          {{ ikon('lock', 14) }}<span>Kunci</span>
-        </button>
-        {% endif %}
         {% if winamp_available %}
         <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -145,16 +124,22 @@
           {% if semua %}
           <div class="kx-table-wrap">
             <table class="kx-audio-table kx-table">
+              <colgroup>
+                <col class="kx-col-select" style="width: 44px;">
+                <col class="kx-col-play" style="width: 48px;">
+                <col class="kx-col-title">
+                <col class="kx-col-durasi" style="width: 90px;">
+                <col class="kx-col-actions" style="width: 52px;">
+              </colgroup>
               <thead>
                 <tr>
-                  <th class="kx-audio-th-select">
-                    <input type="checkbox" id="audio-select-all" class="kx-checkbox" title="Pilih semua trek" />
+                  <th class="kx-audio-th-select" scope="col">
+                    <input type="checkbox" id="audio-select-all" class="kx-checkbox" title="Pilih semua trek" aria-label="Pilih semua trek" />
                   </th>
-                  <th class="kx-audio-th-play"></th>
-                  <th class="kx-audio-th-title">Judul</th>
-                  <th class="kx-audio-th-durasi">Durasi</th>
-                  <th class="kx-audio-th-status">Status</th>
-                  <th class="kx-audio-th-actions"></th>
+                  <th class="kx-audio-th-play" scope="col" aria-label="Putar"></th>
+                  <th class="kx-audio-th-title" scope="col">Judul</th>
+                  <th class="kx-audio-th-durasi" scope="col">Durasi</th>
+                  <th class="kx-audio-th-actions" scope="col" aria-label="Aksi"></th>
                 </tr>
               </thead>
               <tbody id="all-items" data-track-list>
@@ -183,10 +168,6 @@
   <!-- Bar Aksi Mengambang (Pilihan Massal) -->
   <div id="selection-bar" class="kx-aksi-mengambang selection-bar audio-selection" hidden>
     <span id="selection-count" class="kx-aksi-mengambang-teks audio-selection-count" data-kx-jumlah>0 dipilih</span>
-    <div class="kx-aksi-mengambang-tombol">
-      <button type="button" id="lock-items-button" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.lock_items }}</button>
-      <button type="button" id="unlock-items-button" class="kx-btn kx-btn-secondary kx-btn-sm">{{ msg.unlock_items }}</button>
-    </div>
   </div>
 </div>
 
@@ -207,6 +188,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/item_lock.js') }}"></script>
 <script src="{{ url_for('static', filename='js/musik.js') }}"></script>
 {% endblock %}

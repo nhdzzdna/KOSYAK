@@ -122,8 +122,9 @@ def test_halaman_audio_markup_kx(client):
     assert 'kx-audio-play-circle' in html
     assert 'trek_utama.mp3' in html
 
-    # 5. Kolom durasi dan badge status
-    assert 'Terenkripsi' in html
+    # 5. Kolom durasi dan ketiadaan kolom status (dihapus pada Bagian C)
+    assert 'Terenkripsi' not in html
+    assert 'kx-audio-cell-status' not in html
 
     # 6. Modal pemutar audio bawaan browser
     assert 'id="audio-modal"' in html
@@ -152,14 +153,17 @@ def test_halaman_audio_tanpa_inline_script(client):
 
 
 def test_halaman_audio_status_terkunci(client):
+    """Trek tetap tampil di antarmuka, tetapi kolom status dan badge Terkunci telah dihapus (Bagian C)."""
     _unggah_audio_db("trek_rahasia.flac", state="locked")
     resp = client.get("/audio")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
 
     assert "trek_rahasia.flac" in html
-    assert 'data-locked="1"' in html
-    assert "Terkunci" in html
+    assert "Terkunci" not in html
+    assert "kx-audio-cell-status" not in html
+    assert "data-track-lock" not in html
+    assert "data-track-unlock" not in html
 
 
 def test_item_lock_kontrak_generik():

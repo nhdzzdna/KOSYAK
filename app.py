@@ -133,7 +133,7 @@ def create_app() -> Flask:
         "default-src 'self'; script-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
         "font-src 'self'; "
-        "img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; "
+        "img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; "
         "frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'"
     )
 
