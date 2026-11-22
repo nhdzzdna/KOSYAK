@@ -20,8 +20,6 @@
   var pilihSemua = document.getElementById('audio-select-all');
   var bilahPilih = document.getElementById('selection-bar');
   var jumlahPilih = document.getElementById('selection-count');
-  var tombolKunciMassal = document.getElementById('lock-items-button');
-  var tombolLepasMassal = document.getElementById('unlock-items-button');
 
   if (!audio) {
     return;
@@ -53,155 +51,26 @@
     }
   }
 
-  function urai(resp) {
-    return resp.json().catch(function () { return {}; }).then(function (data) {
-      if (!resp.ok || data.success === false) {
-        throw new Error(data.error || pesan('error'));
-      }
-      return data;
-    });
-  }
-
-  function kirim(url, data, grant) {
-    var headers = { 'Content-Type': 'application/json' };
-    if (grant) headers['X-Reauth-Grant'] = grant;
-    return apiFetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(data || {}),
-      credentials: 'same-origin'
-    }).then(urai);
-  }
-
-  function grantUntuk(scope, resource) {
-    if (!window.CryptixReauth || typeof window.CryptixReauth.grantFor !== 'function') {
-      return null;
-    }
-    return window.CryptixReauth.grantFor(scope, resource);
-  }
-
   function mintaGrant(scope, resource) {
-    if (window.CryptixLock && typeof window.CryptixLock.mintaGrant === 'function') {
-      return window.CryptixLock.mintaGrant(scope, resource);
-    }
-    var token = grantUntuk(scope, resource);
-    if (token) {
-      return Promise.resolve(token);
-    }
-    return Promise.reject(new Error(pesan('error')));
-  }
-
-  function ubahStatus(kartu, state, grant) {
-    var id = kartu.getAttribute('data-file-id');
-    var koleksi = kartu.getAttribute('data-collection-id');
-    if (koleksi) {
-      return kirim('/api/collections/' + koleksi + '/items/state', {
-        file_ids: [Number(id)],
-        state: state
-      }, state === 'normal' ? grant : null);
-    }
-    return kirim('/api/media/' + id + '/state', {
-      state: state
-    }, state === 'normal' ? grant : null);
-  }
-
-  function ikonKartu(nama) {
-    return '<svg class="kx-icon" width="16" height="16" aria-hidden="true" ' +
-      'focusable="false"><use href="/static/icons/sprite.svg#' + nama +
-      '"></use></svg>';
-  }
-
-  function perbaruiStatusKartu(kartu, state) {
-    var terkunci = state === 'locked';
-    kartu.setAttribute('data-locked', terkunci ? '1' : '0');
-    kartu.classList.toggle('item-terkunci', terkunci);
-    var putar = kartu.querySelector('[data-track-play]');
-    if (putar) {
-      putar.innerHTML = ikonKartu(terkunci ? 'lock' : 'play');
-    }
-    var lencana = kartu.querySelector('.kx-badge');
-    if (lencana) {
-      lencana.textContent = terkunci ? 'Terkunci' : 'Terenkripsi';
-      lencana.className = terkunci
-        ? 'kx-badge kx-badge-warn item-lock-note'
-        : 'kx-badge kx-badge-ok';
-    }
-    var aksi = kartu.querySelector('[data-track-lock], [data-track-unlock]');
-    if (aksi) {
-      var label = aksi.querySelector('span');
-      if (terkunci) {
-        aksi.removeAttribute('data-track-lock');
-        aksi.setAttribute('data-track-unlock', '');
-        if (label) label.textContent = 'Lepas kunci';
-      } else {
-        aksi.removeAttribute('data-track-unlock');
-        aksi.setAttribute('data-track-lock', '');
-        if (label) label.textContent = 'Kunci';
-      }
-    }
-  }
-
-  function kunciKartu(kartu) {
-    ubahStatus(kartu, 'locked').then(function () {
-      perbaruiStatusKartu(kartu, 'locked');
-      tampilkanSukses('Trek berhasil dikunci.');
-    }).catch(function (err) {
-      tampilkanGalat(err.message);
-    });
-  }
-
-  function lepasKunciKartu(kartu) {
-    var resource = kartu.getAttribute('data-collection-id') ||
-      kartu.getAttribute('data-file-id');
-    mintaGrant('item.unlock', resource).then(function (token) {
-      return ubahStatus(kartu, 'normal', token);
-    }).then(function () {
-      perbaruiStatusKartu(kartu, 'normal');
-      tampilkanSukses('Kunci trek berhasil dilepas.');
-    }).catch(function (err) {
-      tampilkanGalat(err.message);
-    });
-  }
-
-  function kartuTerpilih() {
-    var hasil = [];
-    document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) {
-      var kartu = cb.closest('[data-track]');
-      if (kartu) hasil.push(kartu);
-    });
-    return hasil;
-  }
-
-  function aksiMassal(state) {
-    var kartuList = kartuTerpilih();
-    if (!kartuList.length) return;
-    var rantai = Promise.resolve();
-    kartuList.forEach(function (kartu) {
-      rantai = rantai.then(function () {
-        if (state === 'normal') {
-          var resource = kartu.getAttribute('data-collection-id') ||
-            kartu.getAttribute('data-file-id');
-          return mintaGrant('item.unlock', resource).then(function (token) {
-            return ubahStatus(kartu, 'normal', token);
-          }).then(function () {
-            perbaruiStatusKartu(kartu, 'normal');
-          });
+    return new Promise(function (selesai) {
+      var penangan = function (event) {
+        var detail = event.detail || {};
+        if (detail.scope !== scope || String(detail.resource || '') !== String(resource || '')) {
+          return;
         }
-        return ubahStatus(kartu, 'locked').then(function () {
-          perbaruiStatusKartu(kartu, 'locked');
-        });
-      });
-    });
-    rantai.then(function () {
-      tampilkanSukses(state === 'normal'
-        ? 'Kunci trek berhasil dilepas.'
-        : 'Trek berhasil dikunci.');
-      document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) {
-        cb.checked = false;
-      });
-      perbaruiPilihan();
-    }).catch(function (err) {
-      tampilkanGalat(err.message);
+        document.removeEventListener('cryptix:reauth-grant', penangan);
+        selesai(detail.token);
+      };
+      document.addEventListener('cryptix:reauth-grant', penangan);
+
+      var pemicu = document.createElement('button');
+      pemicu.type = 'button';
+      pemicu.hidden = true;
+      pemicu.setAttribute('data-reauth', scope);
+      pemicu.setAttribute('data-reauth-resource', String(resource || ''));
+      document.body.appendChild(pemicu);
+      pemicu.click();
+      document.body.removeChild(pemicu);
     });
   }
 
@@ -212,17 +81,6 @@
     if (window.KX && window.KX.aksiMengambang) {
       window.KX.aksiMengambang.segarkan();
     }
-  }
-
-  function bolehDiputar(kartu) {
-    if (!kartu) {
-      return false;
-    }
-    if (kartu.getAttribute('data-locked') !== '1') {
-      return true;
-    }
-    return Boolean(window.CryptixReauth &&
-      window.CryptixReauth.grantFor('item.view', kartu.getAttribute('data-file-id')));
   }
 
   var blobAktif = null;
@@ -338,12 +196,6 @@
     if (!kartu) {
       return;
     }
-    if (!bolehDiputar(kartu)) {
-      if (window.CryptixLock) {
-        window.CryptixLock.pilih(kartu, putarKartu, 'item.view');
-      }
-      return;
-    }
     putarKartu(kartu);
   });
 
@@ -373,29 +225,7 @@
     }
   });
 
-  // Aksi Kunci / Lepas kunci per item dan massal
-  document.addEventListener('click', function (event) {
-    var kunci = event.target.closest('[data-track-lock]');
-    if (kunci) {
-      var kartuKunci = kunci.closest('[data-track]');
-      if (kartuKunci) kunciKartu(kartuKunci);
-      return;
-    }
-    var lepas = event.target.closest('[data-track-unlock]');
-    if (lepas) {
-      var kartuLepas = lepas.closest('[data-track]');
-      if (kartuLepas) lepasKunciKartu(kartuLepas);
-      return;
-    }
-    if (event.target === tombolKunciMassal) {
-      aksiMassal('locked');
-      return;
-    }
-    if (event.target === tombolLepasMassal) {
-      aksiMassal('normal');
-      return;
-    }
-  });
+
 
   document.addEventListener('change', function (event) {
     if (event.target.matches('[data-select-file]')) {

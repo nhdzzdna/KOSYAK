@@ -142,11 +142,6 @@
   text-align: left;
 }
 
-.kx-audio-cell-status,
-.kx-audio-th-status {
-  text-align: left;
-}
-
 .kx-audio-play-circle {
   display: inline-flex;
   align-items: center;
@@ -291,10 +286,7 @@
 @media (max-width: 640px) {
   .kx-col-durasi,
   .kx-audio-th-durasi,
-  .kx-audio-cell-durasi,
-  .kx-col-status,
-  .kx-audio-th-status,
-  .kx-audio-cell-status {
+  .kx-audio-cell-durasi {
     display: none;
   }
 }

@@ -170,11 +170,12 @@ def test_audio_tanpa_ui_folder(client):
     assert 'id="audio-search"' in html
     assert 'id="music-audio"' in html
     assert 'id="selection-bar"' in html
-    assert "data-track-lock" in html
+    assert "data-track-lock" not in html
     assert "data-track-unlock" not in html
 
 
 def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
+    """Trek tetap tampil di antarmuka tanpa badge terkunci atau menu kunci audio (Bagian C)."""
     fid = _file_id("trek_kunci.mp3", "audio")
     with get_db() as db:
         db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid,))
@@ -182,9 +183,9 @@ def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
 
     html = client.get("/audio").get_data(as_text=True)
     assert "trek_kunci.mp3" in html
-    assert 'data-locked="1"' in html
-    assert "data-track-unlock" in html
-    assert "Terkunci" in html
+    assert "data-track-unlock" not in html
+    assert "data-track-lock" not in html
+    assert "Terkunci" not in html
 
 
 def test_audio_css_tanpa_kelas_folder():
