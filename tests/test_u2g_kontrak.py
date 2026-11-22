@@ -69,11 +69,13 @@ def test_kontrak_tabel_audio_fixed_dan_colgroup(client):
     konten_html = html_path.read_text(encoding="utf-8")
     assert "<colgroup>" in konten_html, "templates/musik.html harus memiliki <colgroup>"
 
-    # 5. Tujuh kolom: checkbox, play, judul, folder, durasi, status, aksi.
+    # 5. Lima kolom: checkbox, play, judul, durasi, aksi.
     th_count = len(re.findall(r"<th\b", konten_html))
-    assert th_count == 7, f"Header tabel audio harus 7 kolom, ditemukan {th_count}"
-    for nama in ("select", "play", "title", "folder", "durasi", "status", "actions"):
+    assert th_count == 5, f"Header tabel audio harus 5 kolom, ditemukan {th_count}"
+    for nama in ("select", "play", "title", "durasi", "actions"):
         assert f"kx-audio-th-{nama}" in konten_html, f"Header {nama} tidak ditemukan"
+    for terlarang in ("kx-audio-th-folder", "kx-audio-th-status"):
+        assert terlarang not in konten_html, f"Header {terlarang} masih ada"
 
     # 6. Lebar header tidak memakai atribut style inline.
     assert 'style="width' not in konten_html
@@ -83,8 +85,12 @@ def test_kontrak_tabel_audio_fixed_dan_colgroup(client):
     macro_match = re.search(r"{%\s*macro\s+track_row\([^)]*\)\s*%}(.*?){%\s*endmacro\s*%}", konten_html, re.DOTALL)
     assert macro_match, "Macro track_row tidak ditemukan di musik.html"
     td_count = len(re.findall(r"<td\b", macro_match.group(1)))
-    assert td_count == 7, f"Baris audio harus 7 sel, ditemukan {td_count}"
+    assert td_count == 5, f"Baris audio harus 5 sel, ditemukan {td_count}"
     assert th_count == td_count, f"Jumlah <th> ({th_count}) harus sama dengan jumlah <td> ({td_count})"
+    isi_macro = macro_match.group(1)
+    assert "data-folder-badge" not in isi_macro
+    assert "kx-audio-cell-status" not in isi_macro
+    assert "item-lock-note" not in isi_macro
 
 
 def test_kontrak_tanpa_pemutar_kustom_di_musik_html():

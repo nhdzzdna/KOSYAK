@@ -10,6 +10,7 @@
   data-msg-capacity-fmt="{{ MSG.STEGO_CAPACITY_FMT }}" data-msg-capacity-left="{{ MSG.STEGO_CAPACITY_LEFT }}"
   data-msg-capacity-over="{{ MSG.STEGO_CAPACITY_OVER }}" data-msg-capacity-error="{{ MSG.STEGO_CAPACITY_ERROR }}"
   data-msg-processing="{{ MSG.STEGO_EXTRACT_PROCESSING }}" data-msg-extract-failed="{{ MSG.STEGO_EXTRACT_FAILED_JS }}"
+  data-msg-key-required="{{ MSG.STEGO_PASSPHRASE_REQUIRED }}"
   data-msg-text-title="{{ MSG.STEGO_TEXT_RESULT_TITLE }}" data-msg-delete-title="{{ MSG.STEGO_DELETE_TITLE }}"
   data-msg-delete-message="{{ MSG.STEGO_DELETE_MESSAGE }}">
 
@@ -47,22 +48,12 @@
               placeholder="Tulis pesan yang akan disembunyikan…" required></textarea>
           </div>
 
-          <div class="kx-field">
-            <span class="kx-label" id="sg-kunci-label">Kunci muatan</span>
-            <div class="kx-tabs" role="group" aria-labelledby="sg-kunci-label">
-              <button type="button" class="kx-tab is-active" data-sg-kunci="account" aria-pressed="true">Kunci
-                akun</button>
-              <button type="button" class="kx-tab" data-sg-kunci="passphrase" aria-pressed="false">Kunci
-                rahasia</button>
-            </div>
-            <input type="hidden" name="key_mode" id="sg-kunci-mode" value="account" />
-          </div>
-
-          <div class="kx-field" id="sg-kunci-rahasia-field" hidden>
-            <label class="kx-label" for="sg-passphrase">Kunci rahasia</label>
-            <div class="kx-sandi" data-kx-sandi>
-              <input type="password" class="kx-input" name="passphrase" id="sg-passphrase" autocomplete="off" />
-            </div>
+          <div class="kx-field" id="sg-kunci-field">
+            <label class="kx-label" for="sg-passphrase">Kunci</label>
+            <input type="text" class="kx-input" name="passphrase" id="sg-passphrase"
+              autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore
+              data-form-type="other" required />
+            <p class="kx-sg-hint">{{ MSG.STEGO_KEY_NOT_STORED }} {{ MSG.STEGO_KEY_HINT }}</p>
           </div>
 
           <div class="kx-infobox kx-sg-kapasitas" id="sg-kapasitas" role="status" aria-live="polite">
@@ -111,11 +102,11 @@
           </div>
 
           <div class="kx-field">
-            <label class="kx-label" for="sg-ekstrak-passphrase">Kunci rahasia (opsional)</label>
-            <div class="kx-sandi" data-kx-sandi>
-              <input type="password" class="kx-input" name="passphrase" id="sg-ekstrak-passphrase" autocomplete="off"
-                placeholder="Kosongkan bila memakai kunci akun" />
-            </div>
+            <label class="kx-label" for="sg-ekstrak-passphrase">Kunci</label>
+            <input type="text" class="kx-input" name="passphrase" id="sg-ekstrak-passphrase"
+              autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore
+              data-form-type="other" required />
+            <p class="kx-sg-hint">{{ MSG.STEGO_KEY_NOT_STORED }} {{ MSG.STEGO_KEY_HINT }}</p>
           </div>
 
           <button type="button" class="kx-btn kx-btn-primary kx-sg-ekstrak-btn" id="sg-ekstrak-btn"
@@ -251,11 +242,11 @@
       <div class="kx-modal-body">
         <p class="kx-sg-modal-nama" id="sg-modal-nama"></p>
         <div class="kx-field">
-          <label class="kx-label" for="sg-modal-passphrase">Kunci rahasia (opsional)</label>
-          <div class="kx-sandi" data-kx-sandi>
-            <input type="password" class="kx-input" name="passphrase" id="sg-modal-passphrase" autocomplete="off" />
-          </div>
-          <p class="kx-sg-hint">Kosongkan bila memakai kunci akun.</p>
+          <label class="kx-label" for="sg-modal-passphrase">Kunci</label>
+          <input type="text" class="kx-input" name="passphrase" id="sg-modal-passphrase"
+            autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore
+            data-form-type="other" required />
+          <p class="kx-sg-hint">{{ MSG.STEGO_KEY_NOT_STORED }} {{ MSG.STEGO_KEY_HINT }}</p>
         </div>
       </div>
       <footer class="kx-modal-foot">

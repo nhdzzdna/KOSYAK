@@ -2,14 +2,14 @@
  * static/js/steganography.js
  * ────────────────────────────
  * Halaman Steganography: pratinjau gambar pembawa, indikator kapasitas,
- * segmented jenis muatan dan kunci, ekstraksi tanpa muat ulang halaman,
- * menu aksi per baris, serta modal ekstrak dengan kolom kunci rahasia.
+ * satu kunci teks wajib, ekstraksi tanpa muat ulang halaman, menu aksi per
+ * baris, serta modal ekstrak dengan kolom kunci yang sama.
  *
  * Semua teks pesan dibaca dari atribut data-msg-* pada akar halaman
- * (modules/strings.py), bukan teks JS. Nilai payload_type, key_mode, dan
- * use_encryption disimpan pada input tersembunyi agar kontrak POST tidak
- * berubah; checkbox enkripsi tidak memakai atribut name sehingga tidak
- * pernah terkirim ganda dengan input tersembunyi.
+ * (modules/strings.py), bukan teks JS. Nilai use_encryption disimpan pada
+ * input tersembunyi; checkbox enkripsi tidak memakai atribut name sehingga
+ * tidak pernah terkirim ganda dengan input tersembunyi. Form sisip, form
+ * ekstrak unggah, dan modal ekstrak selalu mengirim `passphrase`.
  */
 (function () {
   'use strict';
@@ -28,10 +28,8 @@
   var inputPesan = document.getElementById('sg-pesan');
   var checkboxEnkripsi = document.getElementById('sg-enkripsi');
   var inputUseEnc = document.getElementById('sg-use-enc');
-  var inputKunciMode = document.getElementById('sg-kunci-mode');
-  var infoKunciAkun = document.getElementById('sg-kunci-akun-info');
-  var fieldKunciRahasia = document.getElementById('sg-kunci-rahasia-field');
   var inputPassphraseSisip = document.getElementById('sg-passphrase');
+  var inputPassphraseEkstrak = document.getElementById('sg-ekstrak-passphrase');
   var tombolSisip = document.getElementById('sg-sisip-btn');
   var pratinjau = document.getElementById('sg-pratinjau');
   var pratinjauImg = document.getElementById('sg-pratinjau-img');
@@ -75,37 +73,30 @@
     return meta ? meta.getAttribute('content') : '';
   }
 
-  // ── Segmented kunci muatan ──────────────────────────────────────────
-  function aturKunci() {
-    var rahasia = inputKunciMode && inputKunciMode.value === 'passphrase';
-    if (infoKunciAkun) {
-      infoKunciAkun.hidden = rahasia;
-    }
-    if (fieldKunciRahasia) {
-      fieldKunciRahasia.hidden = !rahasia;
-    }
-    if (inputPassphraseSisip) {
-      inputPassphraseSisip.required = rahasia;
-      if (!rahasia) {
-        inputPassphraseSisip.value = '';
-      }
+  // ── Validasi kunci teks (satu kunci untuk sisip dan ekstrak) ────────
+  function kunciKosong(input) {
+    return !input || !input.value || !input.value.trim();
+  }
+
+  function tampilkanKunciKosong(input) {
+    var teks = pesan('key-required');
+    toast(teks, 'danger');
+    kotakInfo('kx-sg-infobox-danger', teks);
+    if (input && input.focus) {
+      input.focus();
     }
   }
 
-  document.querySelectorAll('[data-sg-kunci]').forEach(function (tombol) {
-    tombol.addEventListener('click', function () {
-      var nilai = tombol.getAttribute('data-sg-kunci');
-      if (inputKunciMode) {
-        inputKunciMode.value = nilai;
-      }
-      document.querySelectorAll('[data-sg-kunci]').forEach(function (el) {
-        var aktif = el === tombol;
-        el.classList.toggle('is-active', aktif);
-        el.setAttribute('aria-pressed', aktif ? 'true' : 'false');
-      });
-      aturKunci();
+  if (inputPassphraseSisip) {
+    inputPassphraseSisip.addEventListener('invalid', function () {
+      tampilkanKunciKosong(inputPassphraseSisip);
     });
-  });
+  }
+  if (inputPassphraseEkstrak) {
+    inputPassphraseEkstrak.addEventListener('invalid', function () {
+      tampilkanKunciKosong(inputPassphraseEkstrak);
+    });
+  }
 
   // ── Checkbox enkripsi muatan ─────────────────────────────────────────
   function sinkronEnkripsi() {
@@ -515,16 +506,22 @@
       if (!baris) {
         return;
       }
-      var data = new FormData();
-      if (modalPassphrase && modalPassphrase.value) {
-        data.append('passphrase', modalPassphrase.value);
+      if (kunciKosong(modalPassphrase)) {
+        tampilkanKunciKosong(modalPassphrase);
+        return;
       }
+      var data = new FormData();
+      data.append('passphrase', modalPassphrase.value.trim());
       kirimEkstraksi(
         baris.getAttribute('data-sg-ekstrak-url'), data, detail.token, true
       );
       return;
     }
     if (formEkstrakUnggah) {
+      if (kunciKosong(inputPassphraseEkstrak)) {
+        tampilkanKunciKosong(inputPassphraseEkstrak);
+        return;
+      }
       kirimEkstraksi(
         formEkstrakUnggah.action,
         new FormData(formEkstrakUnggah),
@@ -548,6 +545,5 @@
   }, true);
 
   // ── Keadaan awal ─────────────────────────────────────────────────────
-  aturKunci();
   sinkronEnkripsi();
 })();

@@ -236,7 +236,7 @@
   function buatKartuMusik(item, folderId) {
     var terkunci = item.state === 'locked';
     var kartu = document.createElement('tr');
-    kartu.className = 'kx-audio-tr music-track' + (terkunci ? ' item-terkunci' : '');
+    kartu.className = 'kx-audio-tr' + (terkunci ? ' item-terkunci' : '');
     kartu.setAttribute('data-track', '');
     kartu.setAttribute('data-file-id', String(item.id));
     kartu.setAttribute('data-kind', 'audio');
@@ -273,24 +273,16 @@
     var judulCell = document.createElement('td');
     judulCell.className = 'kx-audio-cell-title';
     var nama = document.createElement('span');
-    nama.className = 'kx-audio-track-title music-track-name';
+    nama.className = 'kx-audio-track-title';
     nama.setAttribute('title', item.name);
     nama.textContent = item.name;
     var meta = document.createElement('span');
-    meta.className = 'kx-audio-track-meta audio-track-meta';
-    meta.textContent = 'Audio' + (terkunci ? ' \u00b7 Terkunci' : '');
+    meta.className = 'kx-audio-track-meta';
+    meta.textContent = (item.extension ? String(item.extension).toUpperCase() : 'Audio') +
+      (terkunci ? ' \u00b7 Terkunci' : '');
     judulCell.appendChild(nama);
     judulCell.appendChild(meta);
     kartu.appendChild(judulCell);
-
-    var folderCell = document.createElement('td');
-    folderCell.className = 'kx-audio-cell-mono kx-audio-cell-folder';
-    var lencana = document.createElement('span');
-    lencana.className = 'kx-badge kx-badge-info kx-audio-folder-badge';
-    lencana.setAttribute('data-folder-badge', '');
-    lencana.textContent = judul ? (judul.textContent.trim() || 'Tanpa folder') : 'Tanpa folder';
-    folderCell.appendChild(lencana);
-    kartu.appendChild(folderCell);
 
     var durasiCell = document.createElement('td');
     durasiCell.className = 'kx-audio-cell-mono kx-audio-cell-durasi';
@@ -298,16 +290,6 @@
     durasi.textContent = '-';
     durasiCell.appendChild(durasi);
     kartu.appendChild(durasiCell);
-
-    var statusCell = document.createElement('td');
-    statusCell.className = 'kx-audio-cell-status';
-    var status = document.createElement('span');
-    status.className = terkunci
-      ? 'kx-badge kx-badge-warn item-lock-note'
-      : 'kx-badge kx-badge-ok';
-    status.textContent = terkunci ? 'Terkunci' : 'Terenkripsi';
-    statusCell.appendChild(status);
-    kartu.appendChild(statusCell);
 
     var aksiCell = document.createElement('td');
     aksiCell.className = 'kx-cell-actions kx-audio-cell-actions';
@@ -563,11 +545,9 @@
             return;
           }
           itemSemua.setAttribute('data-collection-id', target);
-          var selFolder = itemSemua.querySelector('.kx-audio-cell-mono span');
+          // Baris audio tidak lagi memiliki lencana folder; hanya dokumen
+          // yang menampilkan nama folder di dalam baris.
           var lencanaFolder = itemSemua.querySelector('.kx-doc-folder-badge');
-          if (selFolder && namaFolder) {
-            selFolder.textContent = namaFolder;
-          }
           if (lencanaFolder && namaFolder) {
             lencanaFolder.textContent = namaFolder;
           } else if (itemSemua.hasAttribute('data-doc-item') && namaFolder) {

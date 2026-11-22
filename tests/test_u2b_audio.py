@@ -123,11 +123,13 @@ def test_halaman_audio_markup_kx(client):
     assert 'kx-audio-play-circle' in html
     assert 'trek_utama.mp3' in html
 
-    # 5. Kolom Folder, Durasi, dan Status sejajar dengan isinya
-    assert 'kx-audio-th-folder' in html
-    assert 'data-folder-badge' in html
-    assert 'Terenkripsi' in html
-    assert 'kx-audio-cell-status' in html
+    # 5. Lima kolom: checkbox, play, judul, durasi, aksi.
+    for terlarang in ('kx-audio-th-folder', 'kx-audio-th-status',
+                      'data-folder-badge', 'kx-audio-cell-status',
+                      'Terenkripsi'):
+        assert terlarang not in html, f"{terlarang} masih ada di halaman Audio"
+    assert 'kx-audio-th-durasi' in html
+    assert 'kx-audio-cell-durasi' in html
 
     # 6. Modal pemutar audio bawaan browser
     assert 'id="audio-modal"' in html
@@ -156,15 +158,24 @@ def test_halaman_audio_tanpa_inline_script(client):
 
 
 def test_halaman_audio_status_terkunci(client):
-    """Trek terkunci tetap tampil dengan lencana status, tanpa menu kunci lama."""
+    """Trek terkunci tampil via ikon gembok, data-locked, dan meta '· Terkunci'."""
     _unggah_audio_db("trek_rahasia.flac", state="locked")
     resp = client.get("/audio")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
 
-    assert "trek_rahasia.flac" in html
-    assert "Terkunci" in html
-    assert "kx-audio-cell-status" in html
+    baris = re.search(
+        r'<tr class="kx-audio-tr[^"]*"[^>]*data-name="trek_rahasia\.flac".*?</tr>',
+        html, re.S,
+    )
+    assert baris, "Baris trek terkunci tidak ditemukan"
+    isi = baris.group(0)
+    assert "data-locked=\"1\"" in isi
+    assert "item-terkunci" in isi
+    assert "#lock" in isi, "Ikon gembok tombol play tidak ditemukan"
+    assert "· Terkunci" in isi
+    assert "kx-audio-cell-title" in isi
+    assert "kx-audio-cell-status" not in isi
     assert "data-track-lock" not in html
     assert "data-track-unlock" not in html
 

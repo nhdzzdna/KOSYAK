@@ -272,6 +272,7 @@ class TestStegoOriginalName:
             "csrf_token": token,
             "carrier_image": (io.BytesIO(gambar.read_bytes()), "gambar-pribadi.png"),
             "message": "pesan tersembunyi",
+            "passphrase": "kunci-uji",
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
 

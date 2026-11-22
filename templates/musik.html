@@ -8,7 +8,7 @@
 
 {% macro track_row(f) %}
 {% set terkunci = f.locked or f.state == 'locked' %}
-<tr class="kx-audio-tr"
+<tr class="kx-audio-tr{% if terkunci %} item-terkunci{% endif %}"
     data-track
     data-file-id="{{ f.id }}"
     data-kind="audio"
@@ -24,25 +24,15 @@
   </td>
   <td class="kx-audio-cell-play">
     <button type="button" class="kx-audio-play-circle" data-track-play title="{{ msg.play }}">
-      {{ ikon('play', 14) }}
+      {% if terkunci %}{{ ikon('lock', 14) }}{% else %}{{ ikon('play', 14) }}{% endif %}
     </button>
   </td>
   <td class="kx-audio-cell-title">
     <span class="kx-audio-track-title" title="{{ f.original_name }}">{{ f.original_name }}</span>
-    <span class="kx-audio-track-meta">{{ f.extension|upper }}</span>
-  </td>
-  <td class="kx-audio-cell-mono kx-audio-cell-folder">
-    <span class="kx-badge kx-badge-info kx-audio-folder-badge" data-folder-badge>{{ f.folder_name or 'Tanpa folder' }}</span>
+    <span class="kx-audio-track-meta">{{ f.extension|upper }}{% if terkunci %} · Terkunci{% endif %}</span>
   </td>
   <td class="kx-audio-cell-mono kx-audio-cell-durasi">
     <span>-</span>
-  </td>
-  <td class="kx-audio-cell-status">
-    {% if terkunci %}
-    <span class="kx-badge kx-badge-warn item-lock-note">Terkunci</span>
-    {% else %}
-    <span class="kx-badge kx-badge-ok">Terenkripsi</span>
-    {% endif %}
   </td>
   <td class="kx-cell-actions kx-audio-cell-actions">
     <div class="kx-audio-menu-wrap">
@@ -140,9 +130,7 @@
                 <col class="kx-col-select">
                 <col class="kx-col-play">
                 <col class="kx-col-title">
-                <col class="kx-col-folder">
                 <col class="kx-col-durasi">
-                <col class="kx-col-status">
                 <col class="kx-col-actions">
               </colgroup>
               <thead>
@@ -152,9 +140,7 @@
                   </th>
                   <th class="kx-audio-th-play" scope="col" aria-label="Putar"></th>
                   <th class="kx-audio-th-title" scope="col">Judul</th>
-                  <th class="kx-audio-th-folder" scope="col">Folder</th>
                   <th class="kx-audio-th-durasi" scope="col">Durasi</th>
-                  <th class="kx-audio-th-status" scope="col">Status</th>
                   <th class="kx-audio-th-actions" scope="col" aria-label="Aksi"></th>
                 </tr>
               </thead>

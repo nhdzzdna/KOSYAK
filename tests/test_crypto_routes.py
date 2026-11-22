@@ -115,10 +115,12 @@ class TestCryptoToolsForm:
         assert 'name="show_stages"' in body
         assert 'id="ct-show-stages"' in body
         assert "Tampilkan tahapan" in body
-        assert 'autocomplete="new-password"' in body
+        assert 'autocomplete="off"' in body
+        assert 'autocomplete="new-password"' not in body
         assert 'data-lpignore="true"' in body
         assert "Kunci enkripsi" in body
         assert "Bukan kata sandi akun Anda." not in body
+        assert "data-kx-sandi" not in body
 
     def test_kunci_dan_passphrase_tidak_diisi_otomatis(self, client):
         body = client.get("/crypto-tools").get_data(as_text=True)
@@ -133,7 +135,14 @@ class TestCryptoToolsForm:
             assert atribut in kunci.group(0)
 
         passphrase = re.search(r'<input[^>]*id="ct-passphrase"[^>]*>', body)
-        assert passphrase and 'autocomplete="new-password"' in passphrase.group(0)
+        assert passphrase
+        assert 'type="text"' in passphrase.group(0)
+        assert 'name="passphrase"' in passphrase.group(0)
+        assert 'class="kx-input kx-ct-kunci"' in passphrase.group(0)
+        for atribut in ('autocomplete="off"', 'data-lpignore="true"',
+                        'data-1p-ignore', 'data-bwignore',
+                        'data-form-type="other"', 'readonly'):
+            assert atribut in passphrase.group(0)
 
         js = (Path(__file__).resolve().parents[1] /
               "static" / "js" / "crypto_tools.js").read_text(encoding="utf-8")
