@@ -345,6 +345,23 @@ class TestHalamanSampah:
     def test_kosong(self, client):
         body = client.get("/sampah").get_data(as_text=True)
         assert MSG.TRASH_EMPTY in body
+        assert "item Account Vault" in body
+        assert "kredensial" not in body.lower()
+
+    def test_label_cred_memakai_account_vault(self, client):
+        assert MSG.TRASH_KIND_CRED == "Account Vault"
+        assert MSG.TRASH_FILTER_CRED == "Account Vault"
+        assert MSG.TRASH_MOVED_CRED == "Item Account Vault dipindahkan ke Sampah."
+
+        baris = _tambah_kredensial(client, "Situs Account Vault")
+        _pindah_ke_sampah(client, "cred", baris["id"])
+        body = client.get("/sampah").get_data(as_text=True)
+
+        assert 'data-jenis="cred"' in body
+        assert "Account Vault" in body
+        assert MSG.TRASH_MOVED_CRED in body
+        assert "Kredensial" not in body
+        assert "kredensial" not in body.lower()
 
     def test_menampilkan_item_dengan_nama_terdekripsi(self, client):
         catatan = _tambah_catatan(client, "Judul Rahasia Sampah")

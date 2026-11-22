@@ -9,6 +9,7 @@ ketiadaan hasil maupun kunci turunan di cookie/HTML.
 import base64
 import html
 import re
+from pathlib import Path
 
 import pytest
 
@@ -118,6 +119,27 @@ class TestCryptoToolsForm:
         assert 'data-lpignore="true"' in body
         assert "Kunci enkripsi" in body
         assert "Bukan kata sandi akun Anda." not in body
+
+    def test_kunci_dan_passphrase_tidak_diisi_otomatis(self, client):
+        body = client.get("/crypto-tools").get_data(as_text=True)
+        form = re.search(r'<form[^>]*id="crypto-form"[^>]*>', body)
+        assert form and 'autocomplete="off"' in form.group(0)
+
+        kunci = re.search(r'<input[^>]*id="ct-kunci"[^>]*>', body)
+        assert kunci
+        for atribut in ('autocomplete="off"', 'data-lpignore="true"',
+                        'data-1p-ignore', 'data-bwignore',
+                        'data-form-type="other"', 'readonly'):
+            assert atribut in kunci.group(0)
+
+        passphrase = re.search(r'<input[^>]*id="ct-passphrase"[^>]*>', body)
+        assert passphrase and 'autocomplete="new-password"' in passphrase.group(0)
+
+        js = (Path(__file__).resolve().parents[1] /
+              "static" / "js" / "crypto_tools.js").read_text(encoding="utf-8")
+        assert "function kosongkanKunci" in js
+        assert "addEventListener('load', kosongkanKunci)" in js
+        assert "addEventListener('pageshow', kosongkanKunci)" in js
 
     def test_hint_vigenere_dan_pbkdf2_tersembunyi_bawaan(self, client):
         body = client.get("/crypto-tools").get_data(as_text=True)

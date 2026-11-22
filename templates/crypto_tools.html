@@ -90,8 +90,8 @@
           <div class="kx-field" id="ct-kunci-field" hidden>
             <label class="kx-label" for="ct-kunci">{{ MSG.CRYPTO_KEY_LABEL }}</label>
             <input type="text" class="kx-input kx-ct-kunci" id="ct-kunci" name="key"
-                   autocomplete="new-password" readonly
-                   data-lpignore="true" data-1p-ignore="true" data-form-type="other"
+                   autocomplete="off" readonly
+                   data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"
                    placeholder="Kunci teks atau 64 digit heksadesimal" />
             <p class="kx-ct-hint" data-hint-vigenere hidden>{{ MSG.CRYPTO_VIGENERE_KEY_HINT }}</p>
           </div>

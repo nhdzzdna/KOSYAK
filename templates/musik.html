@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% macro track_row(f) %}
+{% set terkunci = f.locked or f.state == 'locked' %}
 <tr class="kx-audio-tr"
     data-track
     data-file-id="{{ f.id }}"
@@ -14,6 +15,7 @@
     data-name="{{ f.original_name }}"
     data-view-url="{{ f.view_url }}"
     data-stream-url="{{ f.stream_url }}"
+    data-locked="{{ 1 if terkunci else 0 }}"
     data-collection-id="{{ f.collection_id or '' }}">
   <td class="kx-cell-select kx-audio-cell-select">
     <label class="media-select" title="{{ msg.pick }}">
@@ -29,8 +31,18 @@
     <span class="kx-audio-track-title" title="{{ f.original_name }}">{{ f.original_name }}</span>
     <span class="kx-audio-track-meta">{{ f.extension|upper }}</span>
   </td>
+  <td class="kx-audio-cell-mono kx-audio-cell-folder">
+    <span class="kx-badge kx-badge-info kx-audio-folder-badge" data-folder-badge>{{ f.folder_name or 'Tanpa folder' }}</span>
+  </td>
   <td class="kx-audio-cell-mono kx-audio-cell-durasi">
     <span>-</span>
+  </td>
+  <td class="kx-audio-cell-status">
+    {% if terkunci %}
+    <span class="kx-badge kx-badge-warn item-lock-note">Terkunci</span>
+    {% else %}
+    <span class="kx-badge kx-badge-ok">Terenkripsi</span>
+    {% endif %}
   </td>
   <td class="kx-cell-actions kx-audio-cell-actions">
     <div class="kx-audio-menu-wrap">
@@ -125,11 +137,13 @@
           <div class="kx-table-wrap kx-audio-table-wrap">
             <table class="kx-audio-table kx-table">
               <colgroup>
-                <col class="kx-col-select" style="width: 44px;">
-                <col class="kx-col-play" style="width: 48px;">
+                <col class="kx-col-select">
+                <col class="kx-col-play">
                 <col class="kx-col-title">
-                <col class="kx-col-durasi" style="width: 90px;">
-                <col class="kx-col-actions" style="width: 52px;">
+                <col class="kx-col-folder">
+                <col class="kx-col-durasi">
+                <col class="kx-col-status">
+                <col class="kx-col-actions">
               </colgroup>
               <thead>
                 <tr>
@@ -138,7 +152,9 @@
                   </th>
                   <th class="kx-audio-th-play" scope="col" aria-label="Putar"></th>
                   <th class="kx-audio-th-title" scope="col">Judul</th>
+                  <th class="kx-audio-th-folder" scope="col">Folder</th>
                   <th class="kx-audio-th-durasi" scope="col">Durasi</th>
+                  <th class="kx-audio-th-status" scope="col">Status</th>
                   <th class="kx-audio-th-actions" scope="col" aria-label="Aksi"></th>
                 </tr>
               </thead>
