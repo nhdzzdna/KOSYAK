@@ -35,12 +35,15 @@
   }
 
   function tampilkanGalat(teks) {
-    var kotak = document.getElementById('collection-alert');
-    if (kotak) {
-      kotak.textContent = teks || pesan('error');
-      kotak.hidden = false;
-    } else if (window.KX && window.KX.toast) {
-      window.KX.toast(teks || pesan('error'), 'danger');
+    var pesanGalat = teks || 'Audio tidak dapat diputar.';
+    if (window.KX && typeof window.KX.toast === 'function') {
+      window.KX.toast(pesanGalat, 'danger');
+    } else {
+      var kotak = document.getElementById('collection-alert');
+      if (kotak) {
+        kotak.textContent = pesanGalat;
+        kotak.hidden = false;
+      }
     }
   }
 
@@ -245,6 +248,20 @@
     }
   }
 
+  var cadanganMime = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    flac: 'audio/flac',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4'
+  };
+
+  if (audio) {
+    audio.addEventListener('error', function () {
+      tampilkanGalat('Audio tidak dapat diputar.');
+    });
+  }
+
   function putarKartu(kartu) {
     if (!kartu) {
       return;
@@ -263,9 +280,16 @@
       });
     }).then(function (resp) {
       if (!resp.ok) {
-        throw new Error(pesan('error') || 'Gagal memutar audio.');
+        throw new Error('Audio tidak dapat diputar.');
       }
-      return resp.blob();
+      var headerType = resp.headers.get('Content-Type') || '';
+      var bagianType = headerType.split(';')[0].trim();
+      var ekstensi = (nama.split('.').pop() || '').toLowerCase();
+      var tipeBlob = bagianType || cadanganMime[ekstensi] || 'audio/mpeg';
+
+      return resp.arrayBuffer().then(function (buf) {
+        return new Blob([buf], { type: tipeBlob });
+      });
     }).then(function (blob) {
       hentikanAudio();
 
@@ -295,10 +319,12 @@
 
       var janji = audio.play();
       if (janji && typeof janji.catch === 'function') {
-        janji.catch(function () {});
+        janji.catch(function () {
+          tampilkanGalat('Audio tidak dapat diputar.');
+        });
       }
     }).catch(function (err) {
-      tampilkanGalat(err && err.message ? err.message : pesan('error'));
+      tampilkanGalat('Audio tidak dapat diputar.');
     });
   }
 

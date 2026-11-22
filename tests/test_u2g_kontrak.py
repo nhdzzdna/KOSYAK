@@ -412,10 +412,13 @@ def test_kontrak_audio_play_grant_sekali_pakai(client):
     assert resp.status_code == 403
     assert resp.get_json()["reason"] == "scope"
 
-    # 3. Grant benar -> 200
+    # 3. Grant benar -> 200, Content-Type audio/*, isi dan panjang sama dengan plaintext asli
     t_benar = _grant(client, "audio.play", fid)
     resp = client.get(f"/media-vault/stream/{fid}", headers={"X-Reauth-Grant": t_benar})
     assert resp.status_code == 200
+    assert resp.content_type.startswith("audio/")
+    assert resp.data == b"ID3\x03\x00\x00\x00\x00\x00\x00audio-data"
+    assert len(resp.data) == 20
 
     # 4. Panggilan kedua dengan grant yang sama -> 401
     resp = client.get(f"/media-vault/stream/{fid}", headers={"X-Reauth-Grant": t_benar})
