@@ -70,6 +70,10 @@
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/>' +
     '<path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>';
+  var IKON_MENU =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>' +
+    '<circle cx="19" cy="12" r="1.6"/></svg>';
 
   var folderAktif = null;
   var folderTerkunci = false;
@@ -206,45 +210,127 @@
     return form;
   }
 
+  function buatFormMenu(item, tujuan, scope, label, kelas) {
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = tujuan + item.id;
+    form.className = 'd-inline';
+
+    var token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = 'csrf_token';
+    token.value = csrf;
+    form.appendChild(token);
+
+    var tombol = document.createElement('button');
+    tombol.type = 'submit';
+    tombol.className = 'kx-audio-menu-item' + (kelas ? ' ' + kelas : '');
+    tombol.setAttribute('data-reauth', scope);
+    tombol.setAttribute('data-reauth-resource', String(item.id));
+    tombol.innerHTML = (scope === 'file.download' ? IKON_UNDUH : IKON_HAPUS) +
+      '<span>' + label + '</span>';
+    form.appendChild(tombol);
+    return form;
+  }
+
   function buatKartuMusik(item, folderId) {
     var terkunci = item.state === 'locked';
-    var kartu = document.createElement('div');
-    kartu.className = 'music-track' + (terkunci ? ' item-terkunci' : '');
+    var kartu = document.createElement('tr');
+    kartu.className = 'kx-audio-tr music-track' + (terkunci ? ' item-terkunci' : '');
     kartu.setAttribute('data-track', '');
     kartu.setAttribute('data-file-id', String(item.id));
-    kartu.setAttribute('data-kind', item.file_type);
+    kartu.setAttribute('data-kind', 'audio');
     kartu.setAttribute('data-name', item.name);
-    kartu.setAttribute('data-view-url', item.view_url);
+    kartu.setAttribute('data-view-url', item.view_url || '');
+    kartu.setAttribute('data-stream-url', item.stream_url || ('/media-vault/stream/' + item.id));
     kartu.setAttribute('data-locked', terkunci ? '1' : '0');
     kartu.setAttribute('data-collection-id', String(folderId || ''));
 
+    var sel = document.createElement('td');
+    sel.className = 'kx-cell-select kx-audio-cell-select';
     var label = document.createElement('label');
     label.className = 'media-select';
     var cek = document.createElement('input');
     cek.type = 'checkbox';
+    cek.className = 'kx-checkbox';
     cek.setAttribute('data-select-file', '');
+    cek.setAttribute('data-kx-pilih', '');
     cek.value = String(item.id);
     label.appendChild(cek);
-    kartu.appendChild(label);
+    sel.appendChild(label);
+    kartu.appendChild(sel);
 
+    var playCell = document.createElement('td');
+    playCell.className = 'kx-audio-cell-play';
     var tombol = document.createElement('button');
     tombol.type = 'button';
-    tombol.className = 'music-track-play';
+    tombol.className = 'kx-audio-play-circle';
     tombol.setAttribute('data-track-play', '');
     tombol.innerHTML = terkunci ? IKON_KUNCI : IKON_PUTAR;
-    kartu.appendChild(tombol);
+    playCell.appendChild(tombol);
+    kartu.appendChild(playCell);
 
-    var isi = document.createElement('div');
-    isi.className = 'music-track-main';
+    var judulCell = document.createElement('td');
+    judulCell.className = 'kx-audio-cell-title';
     var nama = document.createElement('span');
-    nama.className = 'music-track-name';
+    nama.className = 'kx-audio-track-title music-track-name';
+    nama.setAttribute('title', item.name);
     nama.textContent = item.name;
     var meta = document.createElement('span');
-    meta.className = 'audio-track-meta';
-    meta.textContent = 'Audio' + (terkunci ? ' Â· Terkunci' : '');
-    isi.appendChild(nama);
-    isi.appendChild(meta);
-    kartu.appendChild(isi);
+    meta.className = 'kx-audio-track-meta audio-track-meta';
+    meta.textContent = 'Audio' + (terkunci ? ' \u00b7 Terkunci' : '');
+    judulCell.appendChild(nama);
+    judulCell.appendChild(meta);
+    kartu.appendChild(judulCell);
+
+    var folderCell = document.createElement('td');
+    folderCell.className = 'kx-audio-cell-mono kx-audio-cell-folder';
+    var lencana = document.createElement('span');
+    lencana.className = 'kx-badge kx-badge-info kx-audio-folder-badge';
+    lencana.setAttribute('data-folder-badge', '');
+    lencana.textContent = judul ? (judul.textContent.trim() || 'Tanpa folder') : 'Tanpa folder';
+    folderCell.appendChild(lencana);
+    kartu.appendChild(folderCell);
+
+    var durasiCell = document.createElement('td');
+    durasiCell.className = 'kx-audio-cell-mono kx-audio-cell-durasi';
+    var durasi = document.createElement('span');
+    durasi.textContent = '-';
+    durasiCell.appendChild(durasi);
+    kartu.appendChild(durasiCell);
+
+    var statusCell = document.createElement('td');
+    statusCell.className = 'kx-audio-cell-status';
+    var status = document.createElement('span');
+    status.className = terkunci
+      ? 'kx-badge kx-badge-warn item-lock-note'
+      : 'kx-badge kx-badge-ok';
+    status.textContent = terkunci ? 'Terkunci' : 'Terenkripsi';
+    statusCell.appendChild(status);
+    kartu.appendChild(statusCell);
+
+    var aksiCell = document.createElement('td');
+    aksiCell.className = 'kx-cell-actions kx-audio-cell-actions';
+    var wrap = document.createElement('div');
+    wrap.className = 'kx-audio-menu-wrap';
+    var tombolMenu = document.createElement('button');
+    tombolMenu.type = 'button';
+    tombolMenu.className = 'kx-btn kx-btn-icon kx-btn-sm';
+    tombolMenu.setAttribute('data-menu-toggle', '');
+    tombolMenu.setAttribute('aria-label', 'Aksi trek');
+    tombolMenu.innerHTML = IKON_MENU;
+    wrap.appendChild(tombolMenu);
+
+    var dropdown = document.createElement('div');
+    dropdown.className = 'kx-audio-menu-dropdown';
+    dropdown.setAttribute('data-menu-dropdown', '');
+    dropdown.hidden = true;
+    dropdown.appendChild(buatFormMenu(item, '/vault/decrypt/', 'file.download', 'Unduh', ''));
+    dropdown.appendChild(buatFormMenu(item, '/vault/delete/', 'item.delete', 'Hapus', 'is-danger'));
+    wrap.appendChild(dropdown);
+    aksiCell.appendChild(wrap);
+    kartu.appendChild(aksiCell);
+
     return kartu;
   }
 

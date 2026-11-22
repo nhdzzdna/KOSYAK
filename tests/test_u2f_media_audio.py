@@ -163,9 +163,9 @@ def test_audio_tanpa_ui_folder(client):
     assert 'id="collection-unfiled-section"' not in html
     assert 'id="collection-page"' not in html
     for terlarang in ("folder-create-form", "folder-detail", "data-folder-open",
-                      "move-target", "move-button", "audio-unfiled-empty",
-                      "data-folder-badge"):
+                      "move-target", "move-button", "audio-unfiled-empty"):
         assert terlarang not in html
+    assert 'data-folder-badge' in html
     assert "collection_folders.js" not in html
     assert 'id="audio-search"' in html
     assert 'id="music-audio"' in html
@@ -175,7 +175,7 @@ def test_audio_tanpa_ui_folder(client):
 
 
 def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
-    """Trek tetap tampil di antarmuka tanpa badge terkunci atau menu kunci audio (Bagian C)."""
+    """Trek terkunci tetap tampil dengan lencana status tanpa menu kunci lama."""
     fid = _file_id("trek_kunci.mp3", "audio")
     with get_db() as db:
         db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid,))
@@ -185,10 +185,33 @@ def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
     assert "trek_kunci.mp3" in html
     assert "data-track-unlock" not in html
     assert "data-track-lock" not in html
-    assert "Terkunci" not in html
+    assert "Terkunci" in html
 
 
-def test_audio_css_tanpa_kelas_folder():
+def test_audio_css_kolom_folder_dan_status():
     with open("static/css/halaman/audio.css", "r", encoding="utf-8") as f:
         css = f.read()
-    assert ".kx-audio-folder" not in css
+    assert ".kx-audio-folder-badge" in css
+    assert ".kx-col-folder" in css
+    assert ".kx-col-status" in css
+
+
+def test_buat_kartu_musik_menyusun_baris_tabel_tujuh_sel():
+    with open("static/js/collection_folders.js", "r", encoding="utf-8") as f:
+        js = f.read()
+    blok = js.split("function buatFormMenu", 1)[1].split("function buatKartuDokumen", 1)[0]
+
+    assert "document.createElement('tr')" in blok
+    assert "kx-audio-tr music-track" in blok
+    assert blok.count("document.createElement('td')") == 7
+    for atribut in ("data-track", "data-file-id", "data-kind", "data-name",
+                    "data-view-url", "data-locked", "data-collection-id",
+                    "data-select-file", "data-kx-pilih", "data-track-play",
+                    "data-menu-toggle", "data-menu-dropdown"):
+        assert atribut in blok, f"Atribut {atribut} tidak ada pada baris hasil JS"
+    for kelas in ("kx-cell-select", "kx-audio-cell-play", "kx-audio-cell-title",
+                  "music-track-name", "audio-track-meta", "kx-audio-cell-folder",
+                  "data-folder-badge", "kx-audio-cell-durasi", "kx-audio-cell-status",
+                  "kx-cell-actions", "kx-audio-cell-actions", "kx-audio-menu-wrap",
+                  "kx-audio-menu-dropdown", "kx-audio-menu-item"):
+        assert kelas in blok, f"Kelas {kelas} tidak ada pada baris hasil JS"

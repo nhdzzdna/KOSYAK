@@ -147,15 +147,23 @@
     inputPassphrase.addEventListener('focus', lepasReadonly);
   }
 
-  // Cegah autofill kata sandi akun oleh peramban sebelum kolom difokuskan
-  window.addEventListener('load', function () {
-    if (inputPassphrase && inputPassphrase.hasAttribute('readonly')) {
-      inputPassphrase.value = '';
-    }
-    if (inputKunci && inputKunci.hasAttribute('readonly')) {
+  // Cegah pengelola kata sandi mengisi kolom kunci dengan username/email akun.
+  // Pembersihan hanya terjadi saat halaman dimuat/masuk dari cache, bukan saat
+  // pengguna berpindah cipher atau menjalankan aksi.
+  function kosongkanKunci() {
+    if (inputKunci) {
       inputKunci.value = '';
     }
-  });
+    if (inputPassphrase) {
+      inputPassphrase.value = '';
+    }
+  }
+
+  window.addEventListener('load', kosongkanKunci);
+  window.addEventListener('pageshow', kosongkanKunci);
+  if (document.readyState === 'complete') {
+    kosongkanKunci();
+  }
 
   if (form) {
     form.addEventListener('submit', function () {

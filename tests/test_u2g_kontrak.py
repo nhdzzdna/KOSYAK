@@ -69,12 +69,21 @@ def test_kontrak_tabel_audio_fixed_dan_colgroup(client):
     konten_html = html_path.read_text(encoding="utf-8")
     assert "<colgroup>" in konten_html, "templates/musik.html harus memiliki <colgroup>"
 
-    # 5. Jumlah <th> di thead sama dengan jumlah <td> pada baris macro track_row
+    # 5. Tujuh kolom: checkbox, play, judul, folder, durasi, status, aksi.
     th_count = len(re.findall(r"<th\b", konten_html))
-    # Ambil macro track_row
+    assert th_count == 7, f"Header tabel audio harus 7 kolom, ditemukan {th_count}"
+    for nama in ("select", "play", "title", "folder", "durasi", "status", "actions"):
+        assert f"kx-audio-th-{nama}" in konten_html, f"Header {nama} tidak ditemukan"
+
+    # 6. Lebar header tidak memakai atribut style inline.
+    assert 'style="width' not in konten_html
+    assert not re.search(r"<th\b[^>]*\bstyle\s*=", konten_html)
+
+    # 7. Jumlah <th> sama dengan jumlah <td> pada baris macro track_row.
     macro_match = re.search(r"{%\s*macro\s+track_row\([^)]*\)\s*%}(.*?){%\s*endmacro\s*%}", konten_html, re.DOTALL)
     assert macro_match, "Macro track_row tidak ditemukan di musik.html"
     td_count = len(re.findall(r"<td\b", macro_match.group(1)))
+    assert td_count == 7, f"Baris audio harus 7 sel, ditemukan {td_count}"
     assert th_count == td_count, f"Jumlah <th> ({th_count}) harus sama dengan jumlah <td> ({td_count})"
 
 

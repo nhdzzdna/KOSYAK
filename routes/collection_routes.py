@@ -136,8 +136,10 @@ def musik():
     # Daftar satu tingkat: semua audio di luar koleksi (termasuk yang terkunci)
     # serta isi koleksi terbuka. Isi koleksi terkunci tetap tidak dimuat.
     terlihat = {item["id"] for item in data["semua"]}
+    nama_folder = {folder["id"]: folder["name"] for folder in data["folders"]}
     daftar_audio = [
-        info for info in data["info"].values()
+        dict(info, folder_name=nama_folder.get(info["collection_id"], "Tanpa folder"))
+        for info in data["info"].values()
         if info["collection_id"] is None or info["id"] in terlihat
     ]
 
