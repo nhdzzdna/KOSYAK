@@ -499,3 +499,37 @@ def test_kontrak_selektor_secure_notes_js(client):
     assert pola_detail is not None, "Wadah detail catatan harus memiliki atribut hidden yang dapat dilepas oleh JS"
     assert "display: none !important" not in body, "Wadah detail tidak boleh memiliki hidden permanen"
 
+
+def test_kontrak_pemetaan_label_verifikasi():
+    """Label verifikasi ramah pengguna: tanpa nama scope bertitik, kata sumber daya, grant, atau scope."""
+    from modules.strings import MSG
+
+    assert hasattr(MSG, "REAUTH_SCOPE_LABELS"), "MSG harus mendefinisikan REAUTH_SCOPE_LABELS"
+    assert hasattr(MSG, "REAUTH_DEFAULT_LABEL"), "MSG harus mendefinisikan REAUTH_DEFAULT_LABEL"
+
+    kata_terlarang = ["sumber daya", "grant", "scope"]
+    pola_bertitik = re.compile(r"\b[a-z]+\.[a-z]+\b")
+
+    for k, v in MSG.REAUTH_SCOPE_LABELS.items():
+        assert not pola_bertitik.search(v), f"Label untuk '{k}' membocorkan nama scope bertitik: '{v}'"
+        for kata in kata_terlarang:
+            assert kata not in v.lower(), f"Label untuk '{k}' memuat kata terlarang '{kata}': '{v}'"
+
+    for kata in kata_terlarang:
+        assert kata not in MSG.REAUTH_DEFAULT_LABEL.lower()
+
+
+def test_kontrak_modal_reauth_tanpa_nama_scope_mentah(client):
+    """_reauth_modal.html yang dirender menyertakan data-labels JSON dan tidak menampilkan teks scope/sumber daya."""
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+
+    assert 'id="reauth-modal"' in body
+    assert 'data-labels=' in body
+    assert 'data-default-label=' in body
+
+    # Pastikan teks lama pembocor tidak ada di template
+    assert "pada sumber daya" not in body
+    assert 'Tindakan "' not in body
+

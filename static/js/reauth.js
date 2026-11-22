@@ -102,12 +102,46 @@
     sembunyikanGalat();
   }
 
+  var pemetaanLabelBawaan = {
+    'note.open': 'Verifikasi untuk membuka catatan',
+    'note.edit': 'Verifikasi untuk menyimpan catatan',
+    'item.delete': 'Verifikasi untuk menghapus',
+    'trash.restore': 'Verifikasi untuk memulihkan',
+    'trash.purge': 'Verifikasi untuk menghapus permanen',
+    'audio.play': 'Verifikasi untuk memutar audio',
+    'item.view': 'Verifikasi untuk membuka',
+    'doc.preview': 'Verifikasi untuk membuka',
+    'item.unlock': 'Verifikasi untuk membuka kunci',
+    'album.unlock': 'Verifikasi untuk membuka album',
+    'account.reveal': 'Verifikasi untuk menampilkan',
+    'account.danger': 'Verifikasi untuk melanjutkan',
+    'file.download': 'Verifikasi untuk mengunduh',
+    'stego.extract': 'Verifikasi untuk mengekstrak pesan',
+    'stego.download': 'Verifikasi untuk mengunduh',
+    'media.stream': 'Verifikasi untuk memutar audio',
+    'media.winamp': 'Verifikasi untuk memutar audio',
+    'settings.change': 'Verifikasi untuk mengubah pengaturan',
+    'biometric.manage': 'Verifikasi untuk mengatur biometrik'
+  };
+
+  function labelUntukScope(scope) {
+    var rawLabels = modal.getAttribute('data-labels');
+    if (rawLabels) {
+      try {
+        var parsed = JSON.parse(rawLabels);
+        if (parsed && parsed[scope]) {
+          return parsed[scope];
+        }
+      } catch (e) {}
+    }
+    var bawaan = modal.getAttribute('data-default-label') || 'Verifikasi diperlukan';
+    return pemetaanLabelBawaan[scope] || bawaan;
+  }
+
   function bukaModal(scope, resource) {
     sembunyikanGalat();
     if (konteks) {
-      konteks.textContent = 'Tindakan "' + scope + '"' +
-        (resource ? ' pada sumber daya ' + resource : '') +
-        ' memerlukan verifikasi wajah, WebAuthn, atau kata sandi.';
+      konteks.textContent = labelUntukScope(scope);
     }
     modal.style.display = 'flex';
     if (inputPassword) {

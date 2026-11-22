@@ -347,17 +347,41 @@ class MSG:
     WEBAUTHN_CHALLENGE_EXPIRED = "Tantangan WebAuthn kedaluwarsa. Muat ulang halaman lalu coba lagi."
     WEBAUTHN_NO_CREDENTIAL = "Kredensial WebAuthn tidak ditemukan untuk akun ini."
     WEBAUTHN_FAILED       = "Verifikasi WebAuthn gagal. Coba sekali lagi."
-    # â”€â”€ Sesi H: autentikasi ulang / step-up â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Sesi H: autentikasi ulang / step-up ───────────────────────────────
     REAUTH_REQUIRED           = "Autentikasi ulang diperlukan untuk melanjutkan."
-    REAUTH_INVALID            = "Grant autentikasi ulang tidak valid atau sudah kedaluwarsa."
-    REAUTH_SESSION_MISMATCH   = "Grant autentikasi ulang ini milik sesi lain."
-    REAUTH_SCOPE_MISMATCH     = "Grant tidak berlaku untuk tindakan ini."
-    REAUTH_RESOURCE_MISMATCH  = "Grant tidak berlaku untuk sumber daya ini."
+    REAUTH_INVALID            = "Verifikasi tidak valid atau sudah kedaluwarsa."
+    REAUTH_SESSION_MISMATCH   = "Verifikasi ini milik sesi lain."
+    REAUTH_SCOPE_MISMATCH     = "Verifikasi tidak berlaku untuk tindakan ini."
+    REAUTH_RESOURCE_MISMATCH  = "Verifikasi tidak berlaku untuk item ini."
     REAUTH_METHOD_UNSUPPORTED = "Metode autentikasi ulang tidak didukung."
     REAUTH_WEBAUTHN_PENDING   = "WebAuthn belum tersedia pada versi ini."
     REAUTH_PASSWORD_REQUIRED  = "Kata sandi wajib diisi."
     REAUTH_FAILED             = "Kata sandi tidak valid."
-    REAUTH_SCOPE_UNKNOWN      = "Scope autentikasi ulang tidak dikenal."
+    REAUTH_SCOPE_UNKNOWN      = "Jenis tindakan tidak dikenal."
+
+    # ── Pemetaan label verifikasi ramah pengguna (U2h Bagian E) ───────────
+    REAUTH_SCOPE_LABELS = {
+        "note.open": "Verifikasi untuk membuka catatan",
+        "note.edit": "Verifikasi untuk menyimpan catatan",
+        "item.delete": "Verifikasi untuk menghapus",
+        "trash.restore": "Verifikasi untuk memulihkan",
+        "trash.purge": "Verifikasi untuk menghapus permanen",
+        "audio.play": "Verifikasi untuk memutar audio",
+        "item.view": "Verifikasi untuk membuka",
+        "doc.preview": "Verifikasi untuk membuka",
+        "item.unlock": "Verifikasi untuk membuka kunci",
+        "album.unlock": "Verifikasi untuk membuka album",
+        "account.reveal": "Verifikasi untuk menampilkan",
+        "account.danger": "Verifikasi untuk melanjutkan",
+        "file.download": "Verifikasi untuk mengunduh",
+        "stego.extract": "Verifikasi untuk mengekstrak pesan",
+        "stego.download": "Verifikasi untuk mengunduh",
+        "media.stream": "Verifikasi untuk memutar audio",
+        "media.winamp": "Verifikasi untuk memutar audio",
+        "settings.change": "Verifikasi untuk mengubah pengaturan",
+        "biometric.manage": "Verifikasi untuk mengatur biometrik",
+    }
+    REAUTH_DEFAULT_LABEL = "Verifikasi diperlukan"
     # â”€â”€ Sesi J1: Media Vault dan Steganography â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_STREAM_UNSUPPORTED = "Format ini hanya tersedia untuk unduhan dan tidak diputar di browser."
     MEDIA_DOWNLOAD_ONLY      = "Hanya unduh â€” format ini mungkin tidak dapat diputar di browser."
@@ -398,10 +422,10 @@ class MSG:
     # â”€â”€ GL: pembatas laju, galat JSON, dan detektor wajah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     RATE_LIMITED              = "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."
     ERROR_BAD_REQUEST         = "Permintaan Anda tidak dapat diproses. Periksa kembali input yang dikirim."
-    ERROR_UNAUTHORIZED        = "Silakan masuk terlebih dahulu untuk mengakses sumber daya ini."
-    ERROR_FORBIDDEN           = "Anda tidak memiliki izin untuk mengakses sumber daya ini."
-    ERROR_NOT_FOUND           = "Halaman atau sumber daya yang Anda minta tidak ditemukan."
-    ERROR_METHOD_NOT_ALLOWED  = "Metode permintaan tidak diizinkan untuk sumber daya ini."
+    ERROR_UNAUTHORIZED        = "Silakan masuk terlebih dahulu."
+    ERROR_FORBIDDEN           = "Akses ditolak."
+    ERROR_NOT_FOUND           = "Halaman yang Anda minta tidak ditemukan."
+    ERROR_METHOD_NOT_ALLOWED  = "Metode permintaan tidak diizinkan."
     ERROR_TOO_LARGE           = "Ukuran berkas melebihi batas maksimum yang diizinkan."
     ERROR_INTERNAL            = "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."
     FACE_DETECTOR_UNAVAILABLE = "Detektor wajah tidak tersedia. Periksa pemasangan OpenCV."
