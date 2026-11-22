@@ -48,21 +48,34 @@ def client(tmp_path, monkeypatch):
     return c
 
 
-def test_kontrak_grid_header_dan_baris_audio():
-    """Grid header dan baris Audio memakai selector dan deklarasi grid-template-columns yang sama."""
+def test_kontrak_tabel_audio_fixed_dan_colgroup(client):
+    """Tabel Audio memakai <colgroup>, table-layout: fixed, tanpa display: grid pada tr, dan th == td."""
     css_path = AKAR / "static" / "css" / "halaman" / "audio.css"
-    konten = css_path.read_text(encoding="utf-8")
+    konten_css = css_path.read_text(encoding="utf-8")
 
-    # Memastikan selector bersama .kx-audio-table thead tr, .kx-audio-tr memiliki grid-template-columns
-    pola = re.compile(
-        r"\.kx-audio-table\s+thead\s+tr\s*,\s*\.kx-audio-tr\s*\{[^}]*grid-template-columns:\s*([^;]+);",
-        re.DOTALL,
-    )
-    cocok = pola.search(konten)
-    assert cocok is not None, "Selector bersama thead tr dan kx-audio-tr tidak ditemukan di audio.css"
-    cols = cocok.group(1).strip()
-    # Harus memuat 6 kolom: select, play, title, durasi, status, menu
-    assert "minmax" in cols, f"Kolom grid tidak fleksibel: {cols}"
+    # 1. audio.css memuat table-layout: fixed
+    assert "table-layout: fixed" in konten_css, "audio.css harus memuat table-layout: fixed"
+
+    # 2. Tidak memakai display: grid pada tr
+    pola_grid_tr = re.compile(r"tr[^{]*\{[^}]*display\s*:\s*grid", re.DOTALL | re.IGNORECASE)
+    assert not pola_grid_tr.search(konten_css), "audio.css tidak boleh memakai display: grid pada tr"
+
+    # 3. Baris trek tanpa border-radius kartu
+    pola_radius = re.compile(r"\.kx-audio-tr\s*\{[^}]*border-radius\s*:\s*var\(--kx-radius-card\)", re.DOTALL)
+    assert not pola_radius.search(konten_css), "kx-audio-tr tidak boleh memiliki border-radius kartu"
+
+    # 4. templates/musik.html memiliki <colgroup>
+    html_path = AKAR / "templates" / "musik.html"
+    konten_html = html_path.read_text(encoding="utf-8")
+    assert "<colgroup>" in konten_html, "templates/musik.html harus memiliki <colgroup>"
+
+    # 5. Jumlah <th> di thead sama dengan jumlah <td> pada baris macro track_row
+    th_count = len(re.findall(r"<th\b", konten_html))
+    # Ambil macro track_row
+    macro_match = re.search(r"{%\s*macro\s+track_row\([^)]*\)\s*%}(.*?){%\s*endmacro\s*%}", konten_html, re.DOTALL)
+    assert macro_match, "Macro track_row tidak ditemukan di musik.html"
+    td_count = len(re.findall(r"<td\b", macro_match.group(1)))
+    assert th_count == td_count, f"Jumlah <th> ({th_count}) harus sama dengan jumlah <td> ({td_count})"
 
 
 def test_kontrak_tanpa_pemutar_kustom_di_musik_html():

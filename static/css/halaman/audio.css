@@ -58,7 +58,7 @@
 
 /* ── Tabel & Baris Trek Audio ───────────────────────────────────────────── */
 .kx-card-body > .kx-table-wrap {
-  overflow: visible;
+  overflow-x: auto;
   border: 1px solid var(--kx-border);
   border-radius: var(--kx-radius-card);
   background: var(--kx-surface);
@@ -66,41 +66,29 @@
 
 .kx-audio-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
-  display: block;
-}
-
-.kx-audio-table thead,
-.kx-audio-table tbody {
-  display: block;
-  width: 100%;
-}
-
-.kx-audio-table thead tr,
-.kx-audio-tr {
-  display: grid;
-  grid-template-columns: 40px 44px minmax(0, 1fr) 80px 110px 44px;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .kx-audio-table th {
-  padding: 10px 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--kx-border);
   color: var(--kx-text-2);
   font-size: var(--kx-fs-caption);
   font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
+  text-align: left;
+  vertical-align: middle;
   min-width: 0;
   box-sizing: border-box;
 }
 
 .kx-audio-table td {
-  padding: 8px 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--kx-border-soft);
   color: var(--kx-text);
+  vertical-align: middle;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -110,6 +98,10 @@
 }
 
 .kx-audio-tr {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
   transition: background 0.15s;
 }
 
@@ -127,26 +119,32 @@
 
 .kx-audio-cell-play,
 .kx-audio-th-play {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
 }
 
 .kx-audio-cell-select,
 .kx-audio-th-select {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
 }
 
 .kx-audio-table .kx-cell-actions,
 .kx-audio-th-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
+}
+
+.kx-audio-cell-title,
+.kx-audio-th-title {
+  text-align: left;
+}
+
+.kx-audio-cell-durasi,
+.kx-audio-th-durasi {
+  text-align: left;
+}
+
+.kx-audio-cell-status,
+.kx-audio-th-status {
+  text-align: left;
 }
 
 .kx-audio-play-circle {
@@ -283,22 +281,20 @@
     grid-template-columns: 1fr;
   }
 
-  .kx-audio-table thead tr,
-  .kx-audio-tr {
-    grid-template-columns: 36px 40px minmax(0, 1fr) 70px 100px 40px;
+  .kx-col-durasi,
+  .kx-audio-th-durasi,
+  .kx-audio-cell-durasi {
+    display: none;
   }
 }
 
 @media (max-width: 640px) {
-  .kx-audio-table thead tr,
-  .kx-audio-tr {
-    grid-template-columns: 36px 36px minmax(0, 1fr) 36px;
-  }
-
-  .kx-audio-cell-durasi,
+  .kx-col-durasi,
   .kx-audio-th-durasi,
-  .kx-audio-cell-status,
-  .kx-audio-th-status {
+  .kx-audio-cell-durasi,
+  .kx-col-status,
+  .kx-audio-th-status,
+  .kx-audio-cell-status {
     display: none;
   }
 }

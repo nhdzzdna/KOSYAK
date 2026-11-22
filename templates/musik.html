@@ -145,16 +145,24 @@
           {% if semua %}
           <div class="kx-table-wrap">
             <table class="kx-audio-table kx-table">
+              <colgroup>
+                <col class="kx-col-select" style="width: 44px;">
+                <col class="kx-col-play" style="width: 48px;">
+                <col class="kx-col-title">
+                <col class="kx-col-durasi" style="width: 90px;">
+                <col class="kx-col-status" style="width: 120px;">
+                <col class="kx-col-actions" style="width: 52px;">
+              </colgroup>
               <thead>
                 <tr>
-                  <th class="kx-audio-th-select">
-                    <input type="checkbox" id="audio-select-all" class="kx-checkbox" title="Pilih semua trek" />
+                  <th class="kx-audio-th-select" scope="col">
+                    <input type="checkbox" id="audio-select-all" class="kx-checkbox" title="Pilih semua trek" aria-label="Pilih semua trek" />
                   </th>
-                  <th class="kx-audio-th-play"></th>
-                  <th class="kx-audio-th-title">Judul</th>
-                  <th class="kx-audio-th-durasi">Durasi</th>
-                  <th class="kx-audio-th-status">Status</th>
-                  <th class="kx-audio-th-actions"></th>
+                  <th class="kx-audio-th-play" scope="col" aria-label="Putar"></th>
+                  <th class="kx-audio-th-title" scope="col">Judul</th>
+                  <th class="kx-audio-th-durasi" scope="col">Durasi</th>
+                  <th class="kx-audio-th-status" scope="col">Status</th>
+                  <th class="kx-audio-th-actions" scope="col" aria-label="Aksi"></th>
                 </tr>
               </thead>
               <tbody id="all-items" data-track-list>
