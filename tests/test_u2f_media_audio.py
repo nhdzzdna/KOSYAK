@@ -12,6 +12,7 @@ Uji kontrak perbaikan F1 (Media dan Audio):
 
 import io
 import os
+import re
 import pytest
 import config
 from app import create_app
@@ -186,6 +187,54 @@ def test_audio_trek_terkunci_tampil_dan_bisa_dilepas(client):
     assert "data-track-unlock" not in html
     assert "data-track-lock" not in html
     assert "Terkunci" in html
+
+
+def test_audio_data_folder_tanpa_folder_dan_terkunci_lima_kolom(client):
+    """Tiga sumber data audio tetap memakai lima kolom tanpa Folder/Status."""
+    fid_folder = _file_id("di_folder_uji.mp3", "audio")
+    _album("Folder Uji", "musik", fid_folder)
+    _file_id("tanpa_folder_uji.mp3", "audio")
+    fid_terkunci = _file_id("terkunci_uji.mp3", "audio")
+    with get_db() as db:
+        db.execute("UPDATE vault_files SET locked=1 WHERE id=?", (fid_terkunci,))
+        db.commit()
+
+    resp = client.get("/audio")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+
+    for nama in ("di_folder_uji.mp3", "tanpa_folder_uji.mp3", "terkunci_uji.mp3"):
+        assert nama in html, f"Trek {nama} tidak dirender"
+
+    tabel_audio = re.findall(r"<table\b[^>]*class=\"[^\"]*\bkx-audio-table\b[^\"]*\"[^>]*>.*?</table>",
+                             html, re.S)
+    assert tabel_audio, "Tidak ada tabel kx-audio-table yang dirender"
+    for tabel in tabel_audio:
+        thead = re.search(r"<thead>(.*?)</thead>", tabel, re.S)
+        assert thead, "Tabel audio tanpa thead"
+        headers = re.findall(r"<th\b[^>]*>(.*?)</th>", thead.group(1), re.S)
+        assert len(headers) == 5, f"Header tabel audio bukan 5 kolom: {len(headers)}"
+        tbody = re.search(r"<tbody\b[^>]*>(.*?)</tbody>", tabel, re.S)
+        assert tbody, "Tabel audio tanpa tbody"
+        baris = re.findall(r"<tr\b[^>]*>.*?</tr>", tbody.group(1), re.S)
+        assert baris, "Tabel audio tanpa baris data"
+        for tr in baris:
+            assert len(re.findall(r"<td\b", tr)) == 5, "Baris audio bukan 5 sel"
+
+    for header in re.findall(r"<th\b[^>]*>(.*?)</th>", html, re.S):
+        teks = re.sub(r"<[^>]+>", "", header).strip()
+        assert "Folder" not in teks, f"Header lama masih ada: {teks}"
+        assert "Status" not in teks, f"Header lama masih ada: {teks}"
+
+    baris_terkunci = re.search(
+        r'<tr\b[^>]*data-name="terkunci_uji\.mp3".*?</tr>', html, re.S)
+    assert baris_terkunci, "Baris trek terkunci tidak ditemukan"
+    isi = baris_terkunci.group(0)
+    assert 'data-locked="1"' in isi
+    assert "item-terkunci" in isi
+    assert "#lock" in isi
+    assert "· Terkunci" in isi
+    assert "kx-audio-cell-status" not in isi
 
 
 def test_audio_css_tanpa_gaya_kolom_folder_dan_status():
